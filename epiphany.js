@@ -58,17 +58,17 @@ function _readBookmarks() {
     content = String(content);
     content = content.replace(/^<\?xml version=["'][0-9\.]+["']\?>/, '');
 
-    let xmlData = new XML(content);
+    default xml namespace = 'http://purl.org/rss/1.0/';
+    let xmlData  = new XML(content);
+    let xmlItems = xmlData.item;
 
-/*
-  This is very ugly. But JS's XML doesn't seem to be able to process RDF and I
-  have found no documentation about RDF parsing.
-*/
-    for (let i in xmlData) {
+    for (let i in xmlItems) {
+        let xmlItem = xmlItems[i];
+
         bookmarks.push({
             appInfo: _appInfo,
-            name   : String(xmlData[i][0]),
-            uri    : String(xmlData[i][1])
+            name   : String(xmlItem.title),
+            uri    : String(xmlItem.link)
         });
     }
 }
