@@ -55,7 +55,7 @@ function _readBookmarks() {
             'SQLite', 'DB_DIR=' + _profileDir + ';DB_NAME=places.sqlite', null,
             Gda.ConnectionOptions.READ_ONLY);
     } catch(e) {
-        logError(e.message);
+        log("ERROR: " + e.message);
         return;
     }
 
@@ -66,7 +66,7 @@ function _readBookmarks() {
             'WHERE moz_bookmarks.fk NOT NULL AND moz_bookmarks.title NOT ' +
             'NULL AND moz_bookmarks.type = 1');
     } catch(e) {
-        logError(e.message);
+        log("ERROR: " + e.message);
         connection.close();
         return;
     }
@@ -81,14 +81,14 @@ function _readBookmarks() {
             try {
                 name = result.get_value_at(0, row);
             } catch(e) {
-                logError(e.message);
+                log("ERROR: " + e.message);
                 continue;
             }
 
             try {
                 uri = result.get_value_at(1, row);
             } catch(e) {
-                logError(e.message);
+                log("ERROR: " + e.message);
                 continue;
             }
 

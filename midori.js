@@ -50,7 +50,7 @@ function _readBookmarks() {
             'SQLite', 'DB_DIR=' + _midoriDir + ';DB_NAME=bookmarks', null,
             Gda.ConnectionOptions.READ_ONLY);
     } catch(e) {
-        logError(e.message);
+        log("ERROR: " + e.message);
         return;
     }
 
@@ -58,7 +58,7 @@ function _readBookmarks() {
         result = connection.execute_select_command(
             'SELECT title, uri FROM bookmarks');
     } catch(e) {
-        logError(e.message);
+        log("ERROR: " + e.message);
         connection.close();
         return;
     }
@@ -73,14 +73,14 @@ function _readBookmarks() {
             try {
                 name = result.get_value_at(0, row);
             } catch(e) {
-                logError(e.message);
+                log("ERROR: " + e.message);
                 continue;
             }
 
             try {
                 uri = result.get_value_at(1, row);
             } catch(e) {
-                logError(e.message);
+                log("ERROR: " + e.message);
                 continue;
             }
 

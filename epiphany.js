@@ -47,7 +47,7 @@ function _readBookmarks() {
     try {
         [success, content, size] = _bookmarksFile.load_contents(null);
     } catch(e) {
-        logError(e.message);
+        log("ERROR: " + e.message);
         return;
     }
 
