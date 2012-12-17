@@ -41,6 +41,48 @@ const Midori       = _thisExtension.imports.midori;
 // Variable to hold the extension instance
 var _searchBookmarksInstance = null;
 
+/**
+ * _bookmarksSort:
+ * @a: Object created by a _readBookmarks function
+ * @b: Object created by a _readBookmarks function
+ *
+ * Sort the list of bookmarks in the following order.
+ *
+ * 1. descending by the score
+ * 2. ascending by the name
+*/
+function _bookmarksSort(a, b) {
+    if (a.score < b.score) return  1;
+    if (a.score > b.score) return -1;
+    if (a.name  < b.name ) return -1;
+    if (a.name  > b.name ) return  1;
+    return 0;
+}
+
+/**
+ * _rateMatch:
+ * @bookmark: Object created by a _readBookmarks function
+ * @term: String to search for
+ *
+ * Rate the quality of matches.
+ *
+ * 4: Both, name/title *and* URI begin with the given term
+ * 3: The name/title begin with the given term and the URI contains it
+ * 2: The URI begin with the given term and the name/title contains it
+ * 1: Both, name/title *and* URI contains the given term
+ * 0: Neither name/title nor URI contains the given term
+*/
+function _rateMatch(bookmark, term) {
+    let nameIndex = bookmark.name.toLowerCase().indexOf(term);
+    let uriIndex  = bookmark.uri.toLowerCase().indexOf(term);
+
+    if (nameIndex == 0 && uriIndex == 0) return 4;
+    if (nameIndex == 0 && uriIndex >  0) return 3;
+    if (nameIndex >  0 && uriIndex == 0) return 2;
+    if (nameIndex >  0 && uriIndex >  0) return 1;
+    return 0;
+}
+
 function SearchBookmarks() {
     this._init();
 }
@@ -58,8 +100,8 @@ SearchBookmarks.prototype = {
     },
 
     _searchBookmarks: function(terms) {
-        let bookmarks     = [];
         let searchResults = [];
+        let bookmarks     = [];
 
         bookmarks = bookmarks.concat(Chromium.bookmarks);
         bookmarks = bookmarks.concat(Epiphany.bookmarks);
@@ -71,41 +113,24 @@ SearchBookmarks.prototype = {
             let bookmark = bookmarks[i];
 
             for (let j = 0; j < terms.length; j++) {
-                let nameIndex = bookmark.name.toLowerCase().indexOf(terms[j]);
-                let uriIndex  = bookmark.uri.toLowerCase().indexOf(terms[j]);
+                // Terms are treated as logical AND
+                if (j == 0 || bookmark.score > 0) {
+                    let score = _rateMatch(bookmark, terms[j]);
 
-                if (nameIndex == 0 && uriIndex == 0) {
-                    bookmark.score = 4;
-                } else {
-                    if (nameIndex == 0 && uriIndex > 0) {
-                        bookmark.score = 3;
+                    if (score > 0) {
+                        bookmark.score += score;
                     } else {
-                        if (nameIndex > 0 && uriIndex == 0) {
-                            bookmark.score = 2;
-                        } else {
-                            if (nameIndex > 0 && uriIndex > 0) {
-                                bookmark.score = 1;
-                            } else {
-                                bookmark.score = 0;
-                            }
-                        }
-                    }
-                }
-
-                if (nameIndex > -1) {
-                    searchResults.push(bookmark);
-                } else {
-                    if (uriIndex > -1) {
-                        searchResults.push(bookmark);
+                        bookmark.score = 0;
                     }
                 }
             }
+
+            if (bookmark.score > 0) {
+                searchResults.push(bookmark);
+            }
         }
 
-        searchResults.sort(function(x, y) {
-            return (x.scrore > y.score) || (x.name > y.name);
-        });
-
+        searchResults.sort(_bookmarksSort);
         return searchResults;
     },
 

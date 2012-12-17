@@ -95,6 +95,7 @@ function _readBookmarks() {
             bookmarks.push({
                 appInfo: _appInfo,
                 name   : name,
+                score  : 0,
                 uri    : uri
             });
         }

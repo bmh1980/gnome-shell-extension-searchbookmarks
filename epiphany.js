@@ -68,6 +68,7 @@ function _readBookmarks() {
         bookmarks.push({
             appInfo: _appInfo,
             name   : String(xmlItem.title),
+            score  : 0,
             uri    : String(xmlItem.link)
         });
     }
