@@ -31,23 +31,9 @@ const Firefox      = thisExtension.imports.firefox;
 const GoogleChrome = thisExtension.imports.googlechrome;
 const Midori       = thisExtension.imports.midori;
 
-const Gettext = imports.gettext;
-const localeDir = thisExtension.dir.get_child("locale");
-
-if (localeDir.query_exists(null)) {
-    Gettext.bindtextdomain("searchbookmarks", localeDir.get_path());
-} else {
-    Gettext.bindtextdomain("searchbookmarks", Config.LOCALEDIR);
-}
-
-/*
-  I use dgettext(domain, msg) because textdomain(domain) overrides partial other
-  translations of the GnomeShell.
-
-  Eg. The 'Power Off' entry in the user menu and the labels of the 'Power Off'
-  dialog lost their translations.
-*/
-const _ = Gettext.dgettext;
+const Gettext        = imports.gettext;
+const _gettextDomain = Gettext.domain('searchbookmarks');
+const _              = _gettextDomain.gettext;
 
 var ProviderInstance = null;
 
@@ -59,8 +45,7 @@ SearchBookmarks.prototype = {
     __proto__: Search.SearchProvider.prototype,
 
     _init: function() {
-        Search.SearchProvider.prototype._init.call(this, _("searchbookmarks",
-                                                           "BOOKMARKS"));
+        Search.SearchProvider.prototype._init.call(this, _("BOOKMARKS"));
         Chromium.init();
         Epiphany.init();
         Firefox.init();
@@ -167,6 +152,13 @@ SearchBookmarks.prototype = {
 };
 
 function init() {
+    let localeDir = thisExtension.dir.get_child('locale');
+
+    if (localeDir.query_exists(null)) {
+        Gettext.bindtextdomain('searchbookmarks', localeDir.get_path());
+    } else {
+        Gettext.bindtextdomain('searchbookmarks', Config.LOCALEDIR);
+    }
 }
 
 function enable() {
