@@ -34,9 +34,32 @@ const _thisExtension = ExtensionUtils.getCurrentExtension();
 // Extension imports
 const Chromium     = _thisExtension.imports.chromium;
 const Epiphany     = _thisExtension.imports.epiphany;
-const Firefox      = _thisExtension.imports.firefox;
 const GoogleChrome = _thisExtension.imports.googlechrome;
-const Midori       = _thisExtension.imports.midori;
+
+/**
+ * Firefox and Midori are requiring Gda, what isn't default. Because of this
+ * the firefox and midori modules are only imported if Gda can be imported.
+ * Otherwise the empty module is imported to avoid errors.
+*/
+var _Gda;
+var Firefox;
+var Midori;
+
+try {
+    _Gda = imports.gi.Gda;
+} catch(e) {
+    log(_thisExtension.uuid + ': could not import Gda, searching Firefox ' +
+        'and Midori bookmarks are disabled');
+    _Gda = null;
+}
+
+if (_Gda) {
+    Firefox = _thisExtension.imports.firefox;
+    Midori  = _thisExtension.imports.midori;
+} else {
+    Firefox = _thisExtension.imports.empty;
+    Midori  = _thisExtension.imports.empty;
+}
 
 // Variable to hold the extension instance
 var _searchBookmarksInstance = null;
