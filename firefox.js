@@ -1,43 +1,48 @@
-/*
-  Copyright (C) 2012 Marcus Habermehl <bmh1980de@gmail.com>
- 
-  This program is free software; you can redistribute it and/or
-  modify it under the terms of the GNU General Public License
-  as published by the Free Software Foundation; either version 2
-  of the License, or (at your option) any later version.
-
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-
-  You should have received a copy of the GNU General Public License
-  along with this program; if not, write to the Free Software
-  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301,
-  USA.
+/**
+ * Copyright (C) 2012 Marcus Habermehl <bmh1980de@gmail.com>
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301,
+ * USA.
 */
 
+// External imports
 const Gda   = imports.gi.Gda;
 const Gio   = imports.gi.Gio;
 const GLib  = imports.gi.GLib;
-const Lang  = imports.lang;
-const Main  = imports.ui.main;
 const Shell = imports.gi.Shell;
 
-const appSystem = Shell.AppSystem.get_default();
-const foundApps = appSystem.initial_search(["firefox"]);
-const firefoxDir = GLib.build_filenamev(
-    [GLib.get_home_dir(), ".mozilla", "firefox"]);
+// Gjs imports
+const Lang = imports.lang;
 
-var appInfo          = null;
-var bookmarks        = [];
-var bookmarksFile    = null;
-var bookmarksMonitor = null;
-var callbackId1      = null;
-var callbackId2      = null;
-var profileDir       = null;
-var profilesFile     = null;
-var profilesMonitor  = null;
+// Internal imports
+const Main = imports.ui.main;
+
+const _appSystem = Shell.AppSystem.get_default();
+const _foundApps = _appSystem.initial_search(['firefox']);
+const _firefoxDir = GLib.build_filenamev([GLib.get_home_dir(), '.mozilla',
+                                          'firefox']);
+
+var _appInfo          = null;
+var _bookmarksFile    = null;
+var _bookmarksMonitor = null;
+var _callbackId1      = null;
+var _callbackId2      = null;
+var _profileDir       = null;
+var _profilesFile     = null;
+var _profilesMonitor  = null;
+var bookmarks         = [];
 
 function _readBookmarks() {
     bookmarks = [];
@@ -47,7 +52,7 @@ function _readBookmarks() {
 
     try {
         connection = Gda.Connection.open_from_string(
-            "SQLite", "DB_DIR=" + profileDir + ";DB_NAME=places.sqlite", null,
+            'SQLite', 'DB_DIR=' + _profileDir + ';DB_NAME=places.sqlite', null,
             Gda.ConnectionOptions.READ_ONLY);
     } catch(e) {
         logError(e.message);
@@ -56,10 +61,10 @@ function _readBookmarks() {
 
     try {
         result = connection.execute_select_command(
-            "SELECT moz_bookmarks.title, moz_places.url FROM moz_bookmarks " +
-            "INNER JOIN moz_places ON (moz_bookmarks.fk = moz_places.id) " +
-            "WHERE moz_bookmarks.fk NOT NULL AND moz_bookmarks.title NOT " +
-            "NULL AND moz_bookmarks.type = 1");
+            'SELECT moz_bookmarks.title, moz_places.url FROM moz_bookmarks ' +
+            'INNER JOIN moz_places ON (moz_bookmarks.fk = moz_places.id) ' +
+            'WHERE moz_bookmarks.fk NOT NULL AND moz_bookmarks.title NOT ' +
+            'NULL AND moz_bookmarks.type = 1');
     } catch(e) {
         logError(e.message);
         connection.close();
@@ -71,7 +76,7 @@ function _readBookmarks() {
     if (nRows > 0) {
         for (let row = 0; row < nRows; row++) {
             let name;
-            let url;
+            let uri;
 
             try {
                 name = result.get_value_at(0, row);
@@ -81,16 +86,16 @@ function _readBookmarks() {
             }
 
             try {
-                url = result.get_value_at(1, row);
+                uri = result.get_value_at(1, row);
             } catch(e) {
                 logError(e.message);
                 continue;
             }
 
             bookmarks.push({
-                appInfo: appInfo,
+                appInfo: _appInfo,
                 name   : name,
-                url    : url
+                uri    : uri
             });
         }
     }
@@ -104,104 +109,103 @@ function _readProfiles() {
 
     let keyFile = new GLib.KeyFile();
 
-    keyFile.load_from_file(profilesFile.get_path(), GLib.KeyFileFlags.NONE);
+    keyFile.load_from_file(_profilesFile.get_path(), GLib.KeyFileFlags.NONE);
 
     [groups, nGroups] = keyFile.get_groups();
 
     for (let i = 0; i < nGroups; i++) {
         let path;
-        let name;
+        let profileName;
         let relative;
 
         try {
-            name     = keyFile.get_string(groups[i], "Name");
-            path     = keyFile.get_string(groups[i], "Path");
-            relative = keyFile.get_boolean(groups[i], "IsRelative");
+            profileName = keyFile.get_string(groups[i], 'Name');
+            path        = keyFile.get_string(groups[i], 'Path');
+            relative    = keyFile.get_boolean(groups[i], 'IsRelative');
         } catch(e) {
             continue;
         }
 
-        if (name == "default") {
+        if (profileName == 'default') {
             if (relative) {
-                profileDir = GLib.build_filenamev(
-                    [firefoxDir, path]);
+                _profileDir = GLib.build_filenamev([_firefoxDir, path]);
             } else {
-                profileDir = path;
+                _profileDir = path;
             }
 
-            if (bookmarksMonitor) {
-                bookmarksMonitor.cancel();
-                bookmarksMonitor = null;
+            if (_bookmarksMonitor) {
+                _bookmarksMonitor.cancel();
+                _bookmarksMonitor = null;
             }
 
-            bookmarksFile = Gio.File.new_for_path(
-                GLib.build_filenamev([profileDir, "places.sqlite"]));
+            _bookmarksFile = Gio.File.new_for_path(
+                GLib.build_filenamev([_profileDir, 'places.sqlite']));
 
-            if (bookmarksFile.query_exists(null)) {
-                bookmarksMonitor = bookmarksFile.monitor_file(
+            if (_bookmarksFile.query_exists(null)) {
+                _bookmarksMonitor = _bookmarksFile.monitor_file(
                     Gio.FileMonitorFlags.NONE, null);
-                callbackId2 = bookmarksMonitor.connect(
-                    "changed", Lang.bind(this, _readBookmarks));
+                _callbackId2 = _bookmarksMonitor.connect(
+                    'changed', Lang.bind(this, _readBookmarks));
                 _readBookmarks();
                 return;
             }
         }
     }
 
-    /* If we reached this line, no default profile was found. */
+    // If we reached this line, no default profile was found.
     deinit();
 }
 
 function _reset() {
-    appInfo          = null;
-    bookmarks        = [];
-    bookmarksFile    = null;
-    bookmarksMonitor = null;
-    callbackId1      = null;
-    callbackId2      = null;
-    profileDir       = null;
-    profilesFile     = null;
-    profilesMonitor  = null;
+    _appInfo          = null;
+    _bookmarksFile    = null;
+    _bookmarksMonitor = null;
+    _callbackId1      = null;
+    _callbackId2      = null;
+    _profileDir       = null;
+    _profilesFile     = null;
+    _profilesMonitor  = null;
+    bookmarks         = [];
 }
 
 function init() {
-    if (foundApps.length == 0) {
+    if (_foundApps.length == 0) {
         return;
     }
 
-    appInfo = foundApps[0].get_app_info();
+    _appInfo = _foundApps[0].get_app_info();
 
-    profilesFile = Gio.File.new_for_path(GLib.build_filenamev(
-        [firefoxDir, "profiles.ini"]));
+    _profilesFile = Gio.File.new_for_path(GLib.build_filenamev(
+        [_firefoxDir, 'profiles.ini']));
 
-    if (! profilesFile.query_exists(null)) {
+    if (! _profilesFile.query_exists(null)) {
         _reset();
         return;
     }
 
-    profilesMonitor = profilesFile.monitor_file(Gio.FileMonitorFlags.NONE,
-                                                null);
-    callbackId1 = profilesMonitor.connect("changed",
-                                          Lang.bind(this, _readProfiles));
+    _profilesMonitor = _profilesFile.monitor_file(
+        Gio.FileMonitorFlags.NONE, null);
+    _callbackId1 = _profilesMonitor.connect(
+        'changed', Lang.bind(this, _readProfiles));
 
     _readProfiles();
 }
 
 function deinit() {
-    if (bookmarksMonitor) {
-        if (callbackId2) {
-            bookmarksMonitor.disconnect(callbackId2);
+    if (_bookmarksMonitor) {
+        if (_callbackId2) {
+            _bookmarksMonitor.disconnect(_callbackId2);
         }
 
-        bookmarksMonitor.cancel();
+        _bookmarksMonitor.cancel();
     }
 
-    if (profilesMonitor) {
-        if (callbackId1) {
-            profilesMonitor.disconnect(callbackId1);
+    if (_profilesMonitor) {
+        if (_callbackId1) {
+            _profilesMonitor.disconnect(_callbackId1);
         }
 
-        profilesMonitor.cancel();
+        _profilesMonitor.cancel();
     }
 
     _reset();

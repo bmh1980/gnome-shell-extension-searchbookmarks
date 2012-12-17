@@ -1,36 +1,41 @@
-/*
-  Copyright (C) 2012 Marcus Habermehl <bmh1980de@gmail.com>
- 
-  This program is free software; you can redistribute it and/or
-  modify it under the terms of the GNU General Public License
-  as published by the Free Software Foundation; either version 2
-  of the License, or (at your option) any later version.
-
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-
-  You should have received a copy of the GNU General Public License
-  along with this program; if not, write to the Free Software
-  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301,
-  USA.
+/**
+ * Copyright (C) 2012 Marcus Habermehl <bmh1980de@gmail.com>
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301,
+ * USA.
 */
 
+// External imports
 const Gio   = imports.gi.Gio;
 const GLib  = imports.gi.GLib;
-const Lang  = imports.lang;
-const Main  = imports.ui.main;
 const Shell = imports.gi.Shell;
 
-const appSystem = Shell.AppSystem.get_default();
-const foundApps = appSystem.initial_search(["epiphany"]);
+// Gjs imports
+const Lang = imports.lang;
 
-var appInfo          = null;
-var bookmarks        = [];
-var bookmarksFile    = null;
-var bookmarksMonitor = null;
-var callbackId       = null;
+// Internal imports
+const Main = imports.ui.main;
+
+const _appSystem = Shell.AppSystem.get_default();
+const _foundApps = _appSystem.initial_search(['epiphany']);
+
+var _appInfo          = null;
+var _bookmarksFile    = null;
+var _bookmarksMonitor = null;
+var _callbackId       = null;
+var bookmarks         = [];
 
 function _readBookmarks() {
     bookmarks = [];
@@ -40,7 +45,7 @@ function _readBookmarks() {
     let success;
 
     try {
-        [success, content, size] = bookmarksFile.load_contents(null);
+        [success, content, size] = _bookmarksFile.load_contents(null);
     } catch(e) {
         logError(e.message);
         return;
@@ -51,7 +56,7 @@ function _readBookmarks() {
     }
 
     content = String(content);
-    content = content.replace(/^<\?xml version=["'][0-9\.]+["']\?>/, "");
+    content = content.replace(/^<\?xml version=["'][0-9\.]+["']\?>/, '');
 
     let xmlData = new XML(content);
 
@@ -61,51 +66,51 @@ function _readBookmarks() {
 */
     for (let i in xmlData) {
         bookmarks.push({
-            appInfo: appInfo,
+            appInfo: _appInfo,
             name   : String(xmlData[i][0]),
-            url    : String(xmlData[i][1])
+            uri    : String(xmlData[i][1])
         });
     }
 }
 
 function _reset() {
-    appInfo          = null;
-    bookmarks        = [];
-    bookmarksFile    = null;
-    bookmarksMonitor = null;
-    callbackId       = null;
+    _appInfo          = null;
+    _bookmarksFile    = null;
+    _bookmarksMonitor = null;
+    _callbackId       = null;
+    bookmarks         = [];
 }
 
 function init() {
-    if (foundApps.length == 0) {
+    if (_foundApps.length == 0) {
         return;
     }
 
-    appInfo = foundApps[0].get_app_info();
+    _appInfo = _foundApps[0].get_app_info();
 
-    bookmarksFile = Gio.File.new_for_path(GLib.build_filenamev(
-        [GLib.get_user_config_dir(), "epiphany", "bookmarks.rdf"]));
+    _bookmarksFile = Gio.File.new_for_path(GLib.build_filenamev(
+        [GLib.get_user_config_dir(), 'epiphany', 'bookmarks.rdf']));
 
-    if (! bookmarksFile.query_exists(null)) {
+    if (! _bookmarksFile.query_exists(null)) {
         _reset();
         return;
     }
 
-    bookmarksMonitor = bookmarksFile.monitor_file(Gio.FileMonitorFlags.NONE,
-                                                  null);
-    callbackId = bookmarksMonitor.connect("changed",
-                                          Lang.bind(this, _readBookmarks));
+    _bookmarksMonitor = _bookmarksFile.monitor_file(
+        Gio.FileMonitorFlags.NONE, null);
+    _callbackId = _bookmarksMonitor.connect(
+        'changed', Lang.bind(this, _readBookmarks));
 
     _readBookmarks();
 }
 
 function deinit() {
-    if (bookmarksMonitor) {
-        if (callbackId) {
-            bookmarksMonitor.disconnect(callbackId);
+    if (_bookmarksMonitor) {
+        if (_callbackId) {
+            _bookmarksMonitor.disconnect(_callbackId);
         }
 
-        bookmarksMonitor.cancel();
+        _bookmarksMonitor.cancel();
     }
 
     _reset();

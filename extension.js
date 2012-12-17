@@ -1,41 +1,45 @@
-/*
-  Copyright (C) 2012 Marcus Habermehl <bmh1980de@gmail.com>
- 
-  This program is free software; you can redistribute it and/or
-  modify it under the terms of the GNU General Public License
-  as published by the Free Software Foundation; either version 2
-  of the License, or (at your option) any later version.
-
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-
-  You should have received a copy of the GNU General Public License
-  along with this program; if not, write to the Free Software
-  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301,
-  USA.
+/**
+ * Copyright (C) 2012 Marcus Habermehl <bmh1980de@gmail.com>
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301,
+ * USA.
 */
 
-const Main = imports.ui.main;
-const Config = imports.misc.config;
+// Gjs imports
+const Gettext = imports.gettext;
+
+// Internal imports
+const Config         = imports.misc.config;
 const ExtensionUtils = imports.misc.extensionUtils;
-const Search = imports.ui.search;
-const St = imports.gi.St;
+const Main           = imports.ui.main;
+const Search         = imports.ui.search;
+const St             = imports.gi.St;
 
-const thisExtension = ExtensionUtils.getCurrentExtension();
-
-const Chromium     = thisExtension.imports.chromium;
-const Epiphany     = thisExtension.imports.epiphany;
-const Firefox      = thisExtension.imports.firefox;
-const GoogleChrome = thisExtension.imports.googlechrome;
-const Midori       = thisExtension.imports.midori;
-
-const Gettext        = imports.gettext;
 const _gettextDomain = Gettext.domain('searchbookmarks');
 const _              = _gettextDomain.gettext;
+const _thisExtension = ExtensionUtils.getCurrentExtension();
 
-var ProviderInstance = null;
+// Extension imports
+const Chromium     = _thisExtension.imports.chromium;
+const Epiphany     = _thisExtension.imports.epiphany;
+const Firefox      = _thisExtension.imports.firefox;
+const GoogleChrome = _thisExtension.imports.googlechrome;
+const Midori       = _thisExtension.imports.midori;
+
+// Variable to hold the extension instance
+var _searchBookmarksInstance = null;
 
 function SearchBookmarks() {
     this._init();
@@ -68,18 +72,18 @@ SearchBookmarks.prototype = {
 
             for (let j = 0; j < terms.length; j++) {
                 let nameIndex = bookmark.name.toLowerCase().indexOf(terms[j]);
-                let urlIndex  = bookmark.url.toLowerCase().indexOf(terms[j]);
+                let uriIndex  = bookmark.uri.toLowerCase().indexOf(terms[j]);
 
-                if (nameIndex == 0 && urlIndex == 0) {
+                if (nameIndex == 0 && uriIndex == 0) {
                     bookmark.score = 4;
                 } else {
-                    if (nameIndex == 0 && urlIndex > 0) {
+                    if (nameIndex == 0 && uriIndex > 0) {
                         bookmark.score = 3;
                     } else {
-                        if (nameIndex > 0 && urlIndex == 0) {
+                        if (nameIndex > 0 && uriIndex == 0) {
                             bookmark.score = 2;
                         } else {
-                            if (nameIndex > 0 && urlIndex > 0) {
+                            if (nameIndex > 0 && uriIndex > 0) {
                                 bookmark.score = 1;
                             } else {
                                 bookmark.score = 0;
@@ -91,7 +95,7 @@ SearchBookmarks.prototype = {
                 if (nameIndex > -1) {
                     searchResults.push(bookmark);
                 } else {
-                    if (urlIndex > -1) {
+                    if (uriIndex > -1) {
                         searchResults.push(bookmark);
                     }
                 }
@@ -106,7 +110,7 @@ SearchBookmarks.prototype = {
     },
 
     activateResult: function(id) {
-        id.appInfo.launch_uris([id.url], null);
+        id.appInfo.launch_uris([id.uri], null);
     },
 
     destroy: function() {
@@ -132,11 +136,10 @@ SearchBookmarks.prototype = {
 
         return {
             id        : id,
-            name      : id.name,
-            createIcon: createIcon,
             appInfo   : id.appInfo,
-            url       : id.url,
-            score     : -1
+            createIcon: createIcon,
+            name      : id.name,
+            uri       : id.uri
         };
     },
 
@@ -152,7 +155,7 @@ SearchBookmarks.prototype = {
 };
 
 function init() {
-    let localeDir = thisExtension.dir.get_child('locale');
+    let localeDir = _thisExtension.dir.get_child('locale');
 
     if (localeDir.query_exists(null)) {
         Gettext.bindtextdomain('searchbookmarks', localeDir.get_path());
@@ -162,16 +165,16 @@ function init() {
 }
 
 function enable() {
-    if (ProviderInstance == null) {
-        ProviderInstance = new SearchBookmarks();
-        Main.overview.addSearchProvider(ProviderInstance);
+    if (_searchBookmarksInstance == null) {
+        _searchBookmarksInstance = new SearchBookmarks();
+        Main.overview.addSearchProvider(_searchBookmarksInstance);
     }
 }
 
 function disable() {
-    if (ProviderInstance != null) {
-        Main.overview.removeSearchProvider(ProviderInstance);
-        ProviderInstance.destroy();
-        ProviderInstance = null;
+    if (_searchBookmarksInstance != null) {
+        Main.overview.removeSearchProvider(_searchBookmarksInstance);
+        _searchBookmarksInstance.destroy();
+        _searchBookmarksInstance = null;
     }
 }
