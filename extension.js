@@ -35,6 +35,7 @@ const _thisExtension = ExtensionUtils.getCurrentExtension();
 const Chromium     = _thisExtension.imports.chromium;
 const Epiphany     = _thisExtension.imports.epiphany;
 const GoogleChrome = _thisExtension.imports.googlechrome;
+const Opera        = _thisExtension.imports.opera;
 
 /**
  * Firefox and Midori are requiring Gda, what isn't default. Because of this
@@ -120,6 +121,7 @@ SearchBookmarks.prototype = {
         Firefox.init();
         GoogleChrome.init();
         Midori.init();
+        Opera.init();
     },
 
     _searchBookmarks: function(terms) {
@@ -131,6 +133,7 @@ SearchBookmarks.prototype = {
         bookmarks = bookmarks.concat(Firefox.bookmarks);
         bookmarks = bookmarks.concat(GoogleChrome.bookmarks);
         bookmarks = bookmarks.concat(Midori.bookmarks);
+        bookmarks = bookmarks.concat(Opera.bookmarks);
 
         for (let i = 0; i < bookmarks.length; i++) {
             let bookmark = bookmarks[i];
@@ -167,6 +170,7 @@ SearchBookmarks.prototype = {
         Firefox.deinit();
         GoogleChrome.deinit();
         Midori.deinit();
+        Opera.deinit();
     },
 
     getInitialResultSet: function(terms) {
