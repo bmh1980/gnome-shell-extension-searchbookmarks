@@ -20,7 +20,7 @@ ifeq ($(shell id -u),0)
 	EXTENSIONDIR = $(DATADIR)/gnome-shell/extensions/$(EXTENSION_UUID)
 	LOCALEDIR   ?= $(DATADIR)/locale
 else
-	EXTENSIONDIR = $(HOME)/.locale/share/gnome-shell/extensions/$(EXTENSION_UUID)
+	EXTENSIONDIR = $(HOME)/.local/share/gnome-shell/extensions/$(EXTENSION_UUID)
 	LOCALEDIR    = $(EXTENSIONDIR)/locale
 endif
 
