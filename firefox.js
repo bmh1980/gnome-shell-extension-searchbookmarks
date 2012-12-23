@@ -44,6 +44,7 @@ var _bookmarksFile    = null;
 var _bookmarksMonitor = null;
 var _callbackId1      = null;
 var _callbackId2      = null;
+var _connection       = null;
 var _profileDir       = null;
 var _profilesFile     = null;
 var _profilesMonitor  = null;
@@ -52,61 +53,51 @@ var bookmarks         = [];
 function _readBookmarks() {
     bookmarks = [];
 
-    let connection;
     let result;
 
-    try {
-        connection = Gda.Connection.open_from_string(
-            'SQLite', 'DB_DIR=' + _profileDir + ';DB_NAME=places.sqlite', null,
-            Gda.ConnectionOptions.READ_ONLY);
-    } catch(e) {
-        log("ERROR: " + e.message);
-        return;
+    if (! _connection) {
+        try {
+            _connection = Gda.Connection.open_from_string(
+                'SQLite', 'DB_DIR=' + _profileDir + ';DB_NAME=places.sqlite',
+                null, Gda.ConnectionOptions.READ_ONLY);
+        } catch(e) {
+            log("ERROR: " + e.message);
+            return;
+        }
     }
 
     try {
-        result = connection.execute_select_command(
+        result = _connection.execute_select_command(
             'SELECT moz_bookmarks.title, moz_places.url FROM moz_bookmarks ' +
             'INNER JOIN moz_places ON (moz_bookmarks.fk = moz_places.id) ' +
             'WHERE moz_bookmarks.fk NOT NULL AND moz_bookmarks.title NOT ' +
             'NULL AND moz_bookmarks.type = 1');
     } catch(e) {
         log("ERROR: " + e.message);
-        connection.close();
         return;
     }
 
     let nRows = result.get_n_rows();
 
-    if (nRows > 0) {
-        for (let row = 0; row < nRows; row++) {
-            let name;
-            let uri;
+    for (let row = 0; row < nRows; row++) {
+        let name;
+        let uri;
 
-            try {
-                name = result.get_value_at(0, row);
-            } catch(e) {
-                log("ERROR: " + e.message);
-                continue;
-            }
-
-            try {
-                uri = result.get_value_at(1, row);
-            } catch(e) {
-                log("ERROR: " + e.message);
-                continue;
-            }
-
-            bookmarks.push({
-                appInfo: _appInfo,
-                name   : name,
-                score  : 0,
-                uri    : uri
-            });
+        try {
+            name = result.get_value_at(0, row);
+            uri  = result.get_value_at(1, row);
+        } catch(e) {
+            log("ERROR: " + e.message);
+            continue;
         }
-    }
 
-    connection.close()
+        bookmarks.push({
+            appInfo: _appInfo,
+            name   : name,
+            score  : 0,
+            uri    : uri
+        });
+    }
 }
 
 function _readProfiles() {
@@ -144,6 +135,11 @@ function _readProfiles() {
                 _bookmarksMonitor = null;
             }
 
+            if (_connection) {
+                _connection.close();
+                _connection = null;
+            }
+
             _bookmarksFile = Gio.File.new_for_path(
                 GLib.build_filenamev([_profileDir, 'places.sqlite']));
 
@@ -163,11 +159,16 @@ function _readProfiles() {
 }
 
 function _reset() {
+    if (_connection) {
+        _connection.close();
+    }
+
     _appInfo          = null;
     _bookmarksFile    = null;
     _bookmarksMonitor = null;
     _callbackId1      = null;
     _callbackId2      = null;
+    _connection       = null;
     _profileDir       = null;
     _profilesFile     = null;
     _profilesMonitor  = null;

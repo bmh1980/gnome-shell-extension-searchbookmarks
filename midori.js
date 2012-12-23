@@ -42,70 +42,66 @@ var _appInfo          = null;
 var _bookmarksFile    = null;
 var _bookmarksMonitor = null;
 var _callbackId       = null;
+var _connection       = null;
 var bookmarks         = [];
 
 function _readBookmarks() {
     bookmarks = [];
 
-    let connection;
     let result;
 
-    try {
-        connection = Gda.Connection.open_from_string(
-            'SQLite', 'DB_DIR=' + _midoriDir + ';DB_NAME=bookmarks', null,
-            Gda.ConnectionOptions.READ_ONLY);
-    } catch(e) {
-        log("ERROR: " + e.message);
-        return;
+    if (! _connection) {
+        try {
+            _connection = Gda.Connection.open_from_string(
+                'SQLite', 'DB_DIR=' + _midoriDir + ';DB_NAME=bookmarks', null,
+                Gda.ConnectionOptions.READ_ONLY);
+        } catch(e) {
+            log("ERROR: " + e.message);
+            return;
+        }
     }
 
     try {
-        result = connection.execute_select_command(
+        result = _connection.execute_select_command(
             'SELECT title, uri FROM bookmarks');
     } catch(e) {
         log("ERROR: " + e.message);
-        connection.close();
         return;
     }
 
     let nRows = result.get_n_rows();
 
-    if (nRows > 0) {
-        for (let row = 0; row < nRows; row++) {
-            let name;
-            let uri;
+    for (let row = 0; row < nRows; row++) {
+        let name;
+        let uri;
 
-            try {
-                name = result.get_value_at(0, row);
-            } catch(e) {
-                log("ERROR: " + e.message);
-                continue;
-            }
-
-            try {
-                uri = result.get_value_at(1, row);
-            } catch(e) {
-                log("ERROR: " + e.message);
-                continue;
-            }
-
-            bookmarks.push({
-                appInfo: _appInfo,
-                name   : name,
-                score  : 0,
-                uri    : uri
-            });
+        try {
+            name = result.get_value_at(0, row);
+            uri  = result.get_value_at(1, row);
+        } catch(e) {
+            log("ERROR: " + e.message);
+            continue;
         }
-    }
 
-    connection.close()
+        bookmarks.push({
+            appInfo: _appInfo,
+            name   : name,
+            score  : 0,
+            uri    : uri
+        });
+    }
 }
 
 function _reset() {
+    if (_connection) {
+        _connection.close();
+    }
+
     _appInfo          = null;
     _bookmarksFile    = null;
     _bookmarksMonitor = null;
     _callbackId       = null;
+    _connection       = null;
     bookmarks         = [];
 }
 
