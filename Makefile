@@ -4,7 +4,7 @@ PACKAGE_VERSION = 2
 EXTENSION_UUID  = $(GETTEXT_PACKAGE)@bmh1980de.gmail.com
 
 FILES = chromium.js empty.js epiphany.js extension.js firefox.js \
-        googlechrome.js metadata.json midori.js
+        googlechrome.js metadata.json midori.js opera.js
 
 INTLTOOL_UPDATE = XGETTEXT_ARGS="$(XGETTEXT_ARGS)" \
                   intltool-update -g $(GETTEXT_PACKAGE)
