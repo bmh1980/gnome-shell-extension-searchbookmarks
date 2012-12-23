@@ -17,8 +17,13 @@
  * USA.
 */
 
+try {
+    var Gda = imports.gi.Gda;
+} catch(e) {
+    var Gda = null;
+}
+
 // External imports
-const Gda   = imports.gi.Gda;
 const Gio   = imports.gi.Gio;
 const GLib  = imports.gi.GLib;
 const Shell = imports.gi.Shell;
@@ -170,6 +175,10 @@ function _reset() {
 }
 
 function init() {
+    if (! Gda) {
+        return;
+    }
+
     if (_foundApps.length == 0) {
         return;
     }

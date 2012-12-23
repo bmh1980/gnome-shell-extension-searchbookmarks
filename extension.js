@@ -34,33 +34,10 @@ const _thisExtension = ExtensionUtils.getCurrentExtension();
 // Extension imports
 const Chromium     = _thisExtension.imports.chromium;
 const Epiphany     = _thisExtension.imports.epiphany;
+const Firefox      = _thisExtension.imports.firefox;
 const GoogleChrome = _thisExtension.imports.googlechrome;
+const Midori       = _thisExtension.imports.midori;
 const Opera        = _thisExtension.imports.opera;
-
-/**
- * Firefox and Midori are requiring Gda, what isn't default. Because of this
- * the firefox and midori modules are only imported if Gda can be imported.
- * Otherwise the empty module is imported to avoid errors.
-*/
-var _Gda;
-var Firefox;
-var Midori;
-
-try {
-    _Gda = imports.gi.Gda;
-} catch(e) {
-    log(_thisExtension.uuid + ': could not import Gda, searching Firefox ' +
-        'and Midori bookmarks are disabled');
-    _Gda = null;
-}
-
-if (_Gda) {
-    Firefox = _thisExtension.imports.firefox;
-    Midori  = _thisExtension.imports.midori;
-} else {
-    Firefox = _thisExtension.imports.empty;
-    Midori  = _thisExtension.imports.empty;
-}
 
 // Variable to hold the extension instance
 var _searchBookmarksInstance = null;
@@ -217,6 +194,26 @@ function init() {
 }
 
 function enable() {
+    if (! Firefox.Gda) {
+        /**
+         * TODO: How to wrap translatable lines in GJS? ' \n' is not
+         * allowed by GJS. ',\n' and '\\n' is not handled by intltool/xgettext.
+        */
+        Main.notifyError(
+            _("Search Firefox bookmarks disabled"),
+            _("The library 'Gda-5.0.typelib' could not be imported. If you want to search in Firefox bookmarks, you must install the package that contains the file 'Gda-5.0.typelib'."));
+    }
+
+    if (! Midori.Gda) {
+        /**
+         * TODO: How to wrap translatable lines in GJS? ' \n' is not
+         * allowed by GJS. ',\n' and '\\n' is not handled by intltool/xgettext.
+        */
+        Main.notifyError(
+            _("Search Midori bookmarks disabled"),
+            _("The library 'Gda-5.0.typelib' could not be imported. If you want to search in Midori bookmarks, you must install the package that contains the file 'Gda-5.0.typelib'."));
+    }
+
     if (_searchBookmarksInstance == null) {
         _searchBookmarksInstance = new SearchBookmarks();
         Main.overview.addSearchProvider(_searchBookmarksInstance);
