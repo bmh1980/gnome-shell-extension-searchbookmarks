@@ -67,21 +67,39 @@ function _bookmarksSort(a, b) {
  *
  * Rate the quality of matches.
  *
- * 4: Both, name/title *and* URI begin with the given term
- * 3: The name/title begin with the given term and the URI contains it
- * 2: The URI begin with the given term and the name/title contains it
- * 1: Both, name/title *and* URI contains the given term
- * 0: Neither name/title nor URI contains the given term
+ * 5: Both, title *and* URI begin with the given term
+ * 4: The title begin with the given term and the URI contains it
+ * 4: The URI begin with the given term and the title contains it
+ * 3: The title begin with the given term, but the URI does not contains it
+ * 3: Both, title *and* URI contains the given term
+ * 2: The URI begin with the given term, but the title does not contains it
+ * 2: The title contains the given term, but the URI not
+ * 1: The URI contains the given term, but the title not
+ * 0: Neither title nor URI contains the given term
 */
 function _rateMatch(bookmark, term) {
     let nameIndex = bookmark.name.toLowerCase().indexOf(term);
     let uriIndex  = bookmark.uri.toLowerCase().indexOf(term);
 
-    if (nameIndex == 0 && uriIndex == 0) return 4;
-    if (nameIndex == 0 && uriIndex >  0) return 3;
-    if (nameIndex >  0 && uriIndex == 0) return 2;
-    if (nameIndex >  0 && uriIndex >  0) return 1;
-    return 0;
+    let score = 0;
+
+    if (nameIndex == 0) {
+        score += 3;
+    } else {
+        if (nameIndex > 0) {
+            score += 2;
+        }
+    }
+
+    if (uriIndex == 0) {
+        score += 2;
+    } else {
+        if (uriIndex > 0) {
+            score += 1;
+        }
+    }
+
+    return score;
 }
 
 function SearchBookmarks() {
@@ -118,7 +136,7 @@ SearchBookmarks.prototype = {
             for (let j = 0; j < terms.length; j++) {
                 // Terms are treated as logical AND
                 if (j == 0 || bookmark.score > 0) {
-                    let score = _rateMatch(bookmark, terms[j]);
+                    let score = _rateMatch(bookmark, terms[j].toLowerCase());
 
                     if (score > 0) {
                         bookmark.score += score;
