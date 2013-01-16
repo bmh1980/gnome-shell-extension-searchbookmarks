@@ -78,8 +78,8 @@ function _bookmarksSort(a, b) {
  * 0: Neither title nor URI contains the given term
 */
 function _rateMatch(bookmark, term) {
-    let nameIndex = bookmark.name.toLowerCase().indexOf(term);
-    let uriIndex  = bookmark.uri.toLowerCase().indexOf(term);
+    let nameIndex = bookmark.name.toLocaleLowerCase().indexOf(term);
+    let uriIndex  = bookmark.uri.toLocaleLowerCase().indexOf(term);
 
     let score = 0;
 
@@ -136,7 +136,8 @@ SearchBookmarks.prototype = {
             for (let j = 0; j < terms.length; j++) {
                 // Terms are treated as logical AND
                 if (j == 0 || bookmark.score > 0) {
-                    let score = _rateMatch(bookmark, terms[j].toLowerCase());
+                    let term = terms[j].toLocaleLowerCase();
+                    let score = _rateMatch(bookmark, term);
 
                     if (score > 0) {
                         bookmark.score += score;
