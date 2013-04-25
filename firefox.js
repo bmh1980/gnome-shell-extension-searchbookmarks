@@ -24,8 +24,8 @@ try {
 }
 
 // External imports
-const Gio   = imports.gi.Gio;
-const GLib  = imports.gi.GLib;
+const Gio = imports.gi.Gio;
+const GLib = imports.gi.GLib;
 const Shell = imports.gi.Shell;
 
 // Gjs imports
@@ -39,16 +39,16 @@ const _foundApps = _appSystem.initial_search(['firefox']);
 const _firefoxDir = GLib.build_filenamev([GLib.get_home_dir(), '.mozilla',
                                           'firefox']);
 
-var _appInfo          = null;
-var _bookmarksFile    = null;
+var _appInfo = null;
+var _bookmarksFile = null;
 var _bookmarksMonitor = null;
-var _callbackId1      = null;
-var _callbackId2      = null;
-var _connection       = null;
-var _profileDir       = null;
-var _profilesFile     = null;
-var _profilesMonitor  = null;
-var bookmarks         = [];
+var _callbackId1 = null;
+var _callbackId2 = null;
+var _connection = null;
+var _profileDir = null;
+var _profilesFile = null;
+var _profilesMonitor = null;
+var bookmarks = [];
 
 function _readBookmarks() {
     bookmarks = [];
@@ -85,7 +85,7 @@ function _readBookmarks() {
 
         try {
             name = result.get_value_at(0, row);
-            uri  = result.get_value_at(1, row);
+            uri = result.get_value_at(1, row);
         } catch(e) {
             log("ERROR: " + e.message);
             continue;
@@ -93,9 +93,9 @@ function _readBookmarks() {
 
         bookmarks.push({
             appInfo: _appInfo,
-            name   : name,
-            score  : 0,
-            uri    : uri
+            name: name,
+            score: 0,
+            uri: uri
         });
     }
 }
@@ -117,8 +117,8 @@ function _readProfiles() {
 
         try {
             profileName = keyFile.get_string(groups[i], 'Name');
-            path        = keyFile.get_string(groups[i], 'Path');
-            relative    = keyFile.get_boolean(groups[i], 'IsRelative');
+            path = keyFile.get_string(groups[i], 'Path');
+            relative = keyFile.get_boolean(groups[i], 'IsRelative');
         } catch(e) {
             continue;
         }
@@ -163,16 +163,16 @@ function _reset() {
         _connection.close();
     }
 
-    _appInfo          = null;
-    _bookmarksFile    = null;
+    _appInfo = null;
+    _bookmarksFile = null;
     _bookmarksMonitor = null;
-    _callbackId1      = null;
-    _callbackId2      = null;
-    _connection       = null;
-    _profileDir       = null;
-    _profilesFile     = null;
-    _profilesMonitor  = null;
-    bookmarks         = [];
+    _callbackId1 = null;
+    _callbackId2 = null;
+    _connection = null;
+    _profileDir = null;
+    _profilesFile = null;
+    _profilesMonitor = null;
+    bookmarks = [];
 }
 
 function init() {

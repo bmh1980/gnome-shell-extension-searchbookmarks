@@ -18,8 +18,8 @@
 */
 
 // External imports
-const Gio   = imports.gi.Gio;
-const GLib  = imports.gi.GLib;
+const Gio = imports.gi.Gio;
+const GLib = imports.gi.GLib;
 const Shell = imports.gi.Shell;
 
 // Gjs imports
@@ -31,11 +31,11 @@ const Main = imports.ui.main;
 const _appSystem = Shell.AppSystem.get_default();
 const _foundApps = _appSystem.initial_search(['opera']);
 
-var _appInfo          = null;
-var _bookmarksFile    = null;
+var _appInfo = null;
+var _bookmarksFile = null;
 var _bookmarksMonitor = null;
-var _callbackId       = null;
-var bookmarks         = [];
+var _callbackId = null;
+var bookmarks = [];
 
 function _readBookmarks() {
     bookmarks = [];
@@ -58,8 +58,8 @@ function _readBookmarks() {
     let lines = String(content).split("\n");
 
     let isURL = false;
-    let name  = null;
-    let url   = null;
+    let name = null;
+    let url = null;
 
     for (let i = 0; i < lines.length; i++) {
         let line = lines[i].trim();
@@ -75,14 +75,14 @@ function _readBookmarks() {
                 } else if (line == "") {
                     bookmarks.push({
                         appInfo: _appInfo,
-                        name   : name,
-                        score  : 0,
-                        uri    : url
+                        name: name,
+                        score: 0,
+                        uri: url
                     });
 
                     isURL = false;
-                    name  = null;
-                    url   = null;
+                    name = null;
+                    url = null;
                 }
             }
         }
@@ -90,11 +90,11 @@ function _readBookmarks() {
 }
 
 function _reset() {
-    _appInfo          = null;
-    _bookmarksFile    = null;
+    _appInfo = null;
+    _bookmarksFile = null;
     _bookmarksMonitor = null;
-    _callbackId       = null;
-    bookmarks         = [];
+    _callbackId = null;
+    bookmarks = [];
 }
 
 function init() {

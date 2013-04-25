@@ -18,8 +18,8 @@
 */
 
 // External imports
-const Gio   = imports.gi.Gio;
-const GLib  = imports.gi.GLib;
+const Gio = imports.gi.Gio;
+const GLib = imports.gi.GLib;
 const Shell = imports.gi.Shell;
 
 // Gjs imports
@@ -31,11 +31,11 @@ const Main = imports.ui.main;
 const _appSystem = Shell.AppSystem.get_default();
 const _foundApps = _appSystem.initial_search(['chromium']);
 
-var _appInfo          = null;
-var _bookmarksFile    = null;
+var _appInfo = null;
+var _bookmarksFile = null;
 var _bookmarksMonitor = null;
-var _callbackId       = null;
-var bookmarks         = [];
+var _callbackId = null;
+var bookmarks = [];
 
 function _readBookmarks() {
     bookmarks = [];
@@ -74,9 +74,9 @@ function _readBookmarks() {
             if (children[idx].type == 'url') {
                 bookmarks.push({
                     appInfo: _appInfo,
-                    name   : children[idx].name,
-                    score  : 0,
-                    uri    : children[idx].url
+                    name: children[idx].name,
+                    score: 0,
+                    uri: children[idx].url
                 });
             }
         }
@@ -84,11 +84,11 @@ function _readBookmarks() {
 }
 
 function _reset() {
-    _appInfo          = null;
-    _bookmarksFile    = null;
+    _appInfo = null;
+    _bookmarksFile = null;
     _bookmarksMonitor = null;
-    _callbackId       = null;
-    bookmarks         = [];
+    _callbackId = null;
+    bookmarks = [];
 }
 
 function init() {

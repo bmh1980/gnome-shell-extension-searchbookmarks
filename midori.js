@@ -24,8 +24,8 @@ try {
 }
 
 // External imports
-const Gio   = imports.gi.Gio;
-const GLib  = imports.gi.GLib;
+const Gio = imports.gi.Gio;
+const GLib = imports.gi.GLib;
 const Shell = imports.gi.Shell;
 
 // Gjs imports
@@ -38,12 +38,12 @@ const _appSystem = Shell.AppSystem.get_default();
 const _foundApps = _appSystem.initial_search(['midori']);
 const _midoriDir = GLib.build_filenamev([GLib.get_user_config_dir(), 'midori']);
 
-var _appInfo          = null;
-var _bookmarksFile    = null;
+var _appInfo = null;
+var _bookmarksFile = null;
 var _bookmarksMonitor = null;
-var _callbackId       = null;
-var _connection       = null;
-var bookmarks         = [];
+var _callbackId = null;
+var _connection = null;
+var bookmarks = [];
 
 function _readBookmarks() {
     bookmarks = [];
@@ -77,7 +77,7 @@ function _readBookmarks() {
 
         try {
             name = result.get_value_at(0, row);
-            uri  = result.get_value_at(1, row);
+            uri = result.get_value_at(1, row);
         } catch(e) {
             log("ERROR: " + e.message);
             continue;
@@ -85,9 +85,9 @@ function _readBookmarks() {
 
         bookmarks.push({
             appInfo: _appInfo,
-            name   : name,
-            score  : 0,
-            uri    : uri
+            name: name,
+            score: 0,
+            uri: uri
         });
     }
 }
@@ -97,12 +97,12 @@ function _reset() {
         _connection.close();
     }
 
-    _appInfo          = null;
-    _bookmarksFile    = null;
+    _appInfo = null;
+    _bookmarksFile = null;
     _bookmarksMonitor = null;
-    _callbackId       = null;
-    _connection       = null;
-    bookmarks         = [];
+    _callbackId = null;
+    _connection = null;
+    bookmarks = [];
 }
 
 function init() {

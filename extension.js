@@ -22,23 +22,23 @@ const Gettext = imports.gettext;
 const Lang = imports.lang;
 
 // Internal imports
-const Config         = imports.misc.config;
+const Config = imports.misc.config;
 const ExtensionUtils = imports.misc.extensionUtils;
-const Main           = imports.ui.main;
-const Search         = imports.ui.search;
-const St             = imports.gi.St;
+const Main = imports.ui.main;
+const Search = imports.ui.search;
+const St = imports.gi.St;
 
 const _gettextDomain = Gettext.domain('searchbookmarks');
-const _              = _gettextDomain.gettext;
+const _ = _gettextDomain.gettext;
 const _thisExtension = ExtensionUtils.getCurrentExtension();
 
 // Extension imports
-const Chromium     = _thisExtension.imports.chromium;
-const Epiphany     = _thisExtension.imports.epiphany;
-const Firefox      = _thisExtension.imports.firefox;
+const Chromium = _thisExtension.imports.chromium;
+const Epiphany = _thisExtension.imports.epiphany;
+const Firefox = _thisExtension.imports.firefox;
 const GoogleChrome = _thisExtension.imports.googlechrome;
-const Midori       = _thisExtension.imports.midori;
-const Opera        = _thisExtension.imports.opera;
+const Midori = _thisExtension.imports.midori;
+const Opera = _thisExtension.imports.opera;
 
 // Variable to hold the extension instance
 var _searchBookmarksInstance = null;
@@ -54,10 +54,10 @@ var _searchBookmarksInstance = null;
  * 2. ascending by the name
 */
 function _bookmarksSort(a, b) {
-    if (a.score < b.score) return  1;
+    if (a.score < b.score) return 1;
     if (a.score > b.score) return -1;
-    if (a.name  < b.name ) return -1;
-    if (a.name  > b.name ) return  1;
+    if (a.name < b.name) return -1;
+    if (a.name > b.name) return 1;
     return 0;
 }
 
@@ -80,7 +80,7 @@ function _bookmarksSort(a, b) {
 */
 function _rateMatch(bookmark, term) {
     let nameIndex = bookmark.name.toLocaleLowerCase().indexOf(term);
-    let uriIndex  = bookmark.uri.toLocaleLowerCase().indexOf(term);
+    let uriIndex = bookmark.uri.toLocaleLowerCase().indexOf(term);
 
     let score = 0;
 
@@ -120,7 +120,7 @@ const SearchBookmarks = new Lang.Class({
 
     _searchBookmarks: function(terms) {
         let searchResults = [];
-        let bookmarks     = [];
+        let bookmarks = [];
 
         bookmarks = bookmarks.concat(Chromium.bookmarks);
         bookmarks = bookmarks.concat(Epiphany.bookmarks);
@@ -186,11 +186,11 @@ const SearchBookmarks = new Lang.Class({
         };
 
         return {
-            id        : id,
-            appInfo   : id.appInfo,
+            id: id,
+            appInfo: id.appInfo,
             createIcon: createIcon,
-            name      : id.name,
-            uri       : id.uri
+            name: id.name,
+            uri: id.uri
         };
     },
 

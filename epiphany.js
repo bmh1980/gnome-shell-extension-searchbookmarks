@@ -18,8 +18,8 @@
 */
 
 // External imports
-const Gio   = imports.gi.Gio;
-const GLib  = imports.gi.GLib;
+const Gio = imports.gi.Gio;
+const GLib = imports.gi.GLib;
 const Shell = imports.gi.Shell;
 
 // Gjs imports
@@ -31,11 +31,11 @@ const Main = imports.ui.main;
 const _appSystem = Shell.AppSystem.get_default();
 const _foundApps = _appSystem.initial_search(['epiphany']);
 
-var _appInfo          = null;
-var _bookmarksFile    = null;
+var _appInfo = null;
+var _bookmarksFile = null;
 var _bookmarksMonitor = null;
-var _callbackId       = null;
-var bookmarks         = [];
+var _callbackId = null;
+var bookmarks = [];
 
 function _readBookmarks() {
     bookmarks = [];
@@ -59,7 +59,7 @@ function _readBookmarks() {
     content = content.replace(/^<\?xml version=["'][0-9\.]+["']\?>/, '');
 
     default xml namespace = 'http://purl.org/rss/1.0/';
-    let xmlData  = new XML(content);
+    let xmlData = new XML(content);
     let xmlItems = xmlData.item;
 
     for (let i in xmlItems) {
@@ -67,19 +67,19 @@ function _readBookmarks() {
 
         bookmarks.push({
             appInfo: _appInfo,
-            name   : String(xmlItem.title),
-            score  : 0,
-            uri    : String(xmlItem.link)
+            name: String(xmlItem.title),
+            score: 0,
+            uri: String(xmlItem.link)
         });
     }
 }
 
 function _reset() {
-    _appInfo          = null;
-    _bookmarksFile    = null;
+    _appInfo = null;
+    _bookmarksFile = null;
     _bookmarksMonitor = null;
-    _callbackId       = null;
-    bookmarks         = [];
+    _callbackId = null;
+    bookmarks = [];
 }
 
 function init() {
