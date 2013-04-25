@@ -19,6 +19,7 @@
 
 // Gjs imports
 const Gettext = imports.gettext;
+const Lang = imports.lang;
 
 // Internal imports
 const Config         = imports.misc.config;
@@ -102,15 +103,13 @@ function _rateMatch(bookmark, term) {
     return score;
 }
 
-function SearchBookmarks() {
-    this._init();
-}
-
-SearchBookmarks.prototype = {
-    __proto__: Search.SearchProvider.prototype,
+const SearchBookmarks = new Lang.Class({
+    Name: 'SearchBookmarks',
 
     _init: function() {
-        Search.SearchProvider.prototype._init.call(this, _("BOOKMARKS"));
+        this.title = _("BOOKMARKS");
+        this.searchSystem = null;
+
         Chromium.init();
         Epiphany.init();
         Firefox.init();
@@ -160,6 +159,10 @@ SearchBookmarks.prototype = {
         id.appInfo.launch_uris([id.uri], null);
     },
 
+    createResultActor: function(resultMeta, terms) {
+        return null;
+    },
+
     destroy: function() {
         Chromium.deinit();
         Epiphany.deinit();
@@ -200,7 +203,7 @@ SearchBookmarks.prototype = {
 
         return results;
     }
-};
+});
 
 function init() {
     let localeDir = _thisExtension.dir.get_child('locale');
