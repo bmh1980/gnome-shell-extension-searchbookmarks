@@ -15,6 +15,8 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301,
  * USA.
+ *
+ * Source code modified by David Charte <http://github.com/fdavidcl>
 */
 
 // External imports
@@ -36,6 +38,36 @@ var _bookmarksFile = null;
 var _bookmarksMonitor = null;
 var _callbackId = null;
 var bookmarks = [];
+
+/**
+ * Function _extractBookmarks added by David Charte,
+ * code from this function is taken from function
+ * _readBookmarks.
+ *
+ * This function enables the extension to read bookmarks
+ * from any folder.
+ *
+ * 10/10/2013
+ * 
+*/ 
+function _extractBookmarks(node) {
+    for (let idx in node) {
+        if (node[idx].type == 'url') {
+            bookmarks.push({
+                appInfo: _appInfo,
+                name: node[idx].name,
+                score: 0,
+                uri: node[idx].url
+            });
+        } else {
+            if (node[idx].children) {
+                let children = node[idx].children;
+                
+                _extractBookmarks(children);
+            }
+        }
+    }
+}
 
 function _readBookmarks() {
     bookmarks = [];
@@ -70,16 +102,7 @@ function _readBookmarks() {
     for (let bookmarkLocation in jsonResult.roots) {
         let children = jsonResult.roots[bookmarkLocation].children;
 
-        for (let idx in children) {
-            if (children[idx].type == 'url') {
-                bookmarks.push({
-                    appInfo: _appInfo,
-                    name: children[idx].name,
-                    score: 0,
-                    uri: children[idx].url
-                });
-            }
-        }
+        _extractBookmarks(children);
     }
 }
 
