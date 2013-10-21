@@ -33,10 +33,9 @@ const _ = _gettextDomain.gettext;
 const _thisExtension = ExtensionUtils.getCurrentExtension();
 
 // Extension imports
-const Chromium = _thisExtension.imports.chromium;
+const Chrome = _thisExtension.imports.chrome;
 const Epiphany = _thisExtension.imports.epiphany;
 const Firefox = _thisExtension.imports.firefox;
-const GoogleChrome = _thisExtension.imports.googlechrome;
 const Midori = _thisExtension.imports.midori;
 const Opera = _thisExtension.imports.opera;
 
@@ -106,10 +105,9 @@ const SearchBookmarks = new Lang.Class({
         this.title = _("BOOKMARKS");
         this.searchSystem = null;
 
-        Chromium.init();
+        Chrome.init();
         Epiphany.init();
         Firefox.init();
-        GoogleChrome.init();
         Midori.init();
         Opera.init();
     },
@@ -117,10 +115,9 @@ const SearchBookmarks = new Lang.Class({
     _searchBookmarks: function(terms) {
         let bookmarks = [];
 
-        bookmarks = bookmarks.concat(Chromium.bookmarks);
+        bookmarks = bookmarks.concat(Chrome.bookmarks);
         bookmarks = bookmarks.concat(Epiphany.bookmarks);
         bookmarks = bookmarks.concat(Firefox.bookmarks);
-        bookmarks = bookmarks.concat(GoogleChrome.bookmarks);
         bookmarks = bookmarks.concat(Midori.bookmarks);
         bookmarks = bookmarks.concat(Opera.bookmarks);
 
@@ -159,10 +156,9 @@ const SearchBookmarks = new Lang.Class({
     },
 
     destroy: function() {
-        Chromium.deinit();
+        Chrome.deinit();
         Epiphany.deinit();
         Firefox.deinit();
-        GoogleChrome.deinit();
         Midori.deinit();
         Opera.deinit();
     },
