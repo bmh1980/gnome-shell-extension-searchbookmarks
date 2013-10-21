@@ -35,25 +35,19 @@ const Lang = imports.lang;
 const Main = imports.ui.main;
 
 const _appSystem = Shell.AppSystem.get_default();
-const _foundApps = _appSystem.initial_search(['firefox']);
 const _firefoxDir = GLib.build_filenamev([GLib.get_home_dir(), '.mozilla',
                                           'firefox']);
 
-var _appInfo = null;
-var _bookmarksFile = null;
 var _bookmarksMonitor = null;
 var _callbackId1 = null;
 var _callbackId2 = null;
 var _connection = null;
 var _profileDir = null;
-var _profilesFile = null;
 var _profilesMonitor = null;
 var bookmarks = [];
 
-function _readBookmarks() {
+function _readBookmarks(monitor, file, otherFile, eventType, appInfo) {
     bookmarks = [];
-
-    let result;
 
     if (! _connection) {
         try {
@@ -65,6 +59,8 @@ function _readBookmarks() {
             return;
         }
     }
+
+    let result;
 
     try {
         result = _connection.execute_select_command(
@@ -92,7 +88,7 @@ function _readBookmarks() {
         }
 
         bookmarks.push({
-            appInfo: _appInfo,
+            appInfo: appInfo,
             name: name,
             score: 0,
             uri: uri
@@ -100,19 +96,19 @@ function _readBookmarks() {
     }
 }
 
-function _readProfiles() {
-    let groups;
-    let nGroups;
-
+function _readProfiles(monitor, file, otherFile, eventType, appInfo) {
     let keyFile = new GLib.KeyFile();
 
-    keyFile.load_from_file(_profilesFile.get_path(), GLib.KeyFileFlags.NONE);
+    keyFile.load_from_file(file.get_path(), GLib.KeyFileFlags.NONE);
+
+    let groups;
+    let nGroups;
 
     [groups, nGroups] = keyFile.get_groups();
 
     for (let i = 0; i < nGroups; i++) {
-        let path;
         let profileName;
+        let path;
         let relative;
 
         try {
@@ -140,15 +136,16 @@ function _readProfiles() {
                 _connection = null;
             }
 
-            _bookmarksFile = Gio.File.new_for_path(
+            let bookmarksFile = Gio.File.new_for_path(
                 GLib.build_filenamev([_profileDir, 'places.sqlite']));
 
-            if (_bookmarksFile.query_exists(null)) {
-                _bookmarksMonitor = _bookmarksFile.monitor_file(
+            if (bookmarksFile.query_exists(null)) {
+                _bookmarksMonitor = bookmarksFile.monitor_file(
                     Gio.FileMonitorFlags.NONE, null);
                 _callbackId2 = _bookmarksMonitor.connect(
-                    'changed', Lang.bind(this, _readBookmarks));
-                _readBookmarks();
+                    'changed', Lang.bind(this, _readBookmarks, appInfo));
+
+                _readBookmarks(null, bookmarksFile, null, null, appInfo);
                 return;
             }
         }
@@ -163,43 +160,36 @@ function _reset() {
         _connection.close();
     }
 
-    _appInfo = null;
-    _bookmarksFile = null;
     _bookmarksMonitor = null;
     _callbackId1 = null;
     _callbackId2 = null;
     _connection = null;
     _profileDir = null;
-    _profilesFile = null;
     _profilesMonitor = null;
     bookmarks = [];
 }
 
 function init() {
-    if (! Gda) {
-        return;
+    if (Gda) {
+        let foundApps = _appSystem.initial_search(['firefox']);
+
+        if (foundApps.length > 0) {
+            let appInfo = foundApps[0].get_app_info();
+            let profilesFile = Gio.File.new_for_path(GLib.build_filenamev(
+                [_firefoxDir, 'profiles.ini']));
+
+            if (profilesFile.query_exists(null)) {
+                _profilesMonitor = profilesFile.monitor_file(
+                    Gio.FileMonitorFlags.NONE, null);
+                _callbackId1 = _profilesMonitor.connect(
+                    'changed', Lang.bind(this, _readProfiles, appInfo));
+
+                _readProfiles(null, profilesFile, null, null, appInfo);
+            } else {
+                _reset();
+            }
+        }
     }
-
-    if (_foundApps.length == 0) {
-        return;
-    }
-
-    _appInfo = _foundApps[0].get_app_info();
-
-    _profilesFile = Gio.File.new_for_path(GLib.build_filenamev(
-        [_firefoxDir, 'profiles.ini']));
-
-    if (! _profilesFile.query_exists(null)) {
-        _reset();
-        return;
-    }
-
-    _profilesMonitor = _profilesFile.monitor_file(
-        Gio.FileMonitorFlags.NONE, null);
-    _callbackId1 = _profilesMonitor.connect(
-        'changed', Lang.bind(this, _readProfiles));
-
-    _readProfiles();
 }
 
 function deinit() {

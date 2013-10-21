@@ -29,80 +29,70 @@ const Lang = imports.lang;
 const Main = imports.ui.main;
 
 const _appSystem = Shell.AppSystem.get_default();
-const _foundApps = _appSystem.initial_search(['epiphany']);
 
-var _appInfo = null;
-var _bookmarksFile = null;
 var _bookmarksMonitor = null;
 var _callbackId = null;
 var bookmarks = [];
 
-function _readBookmarks() {
+function _readBookmarks(monitor, file, otherFile, eventType, appInfo) {
     bookmarks = [];
 
+    let success;
     let content;
     let size;
-    let success;
 
     try {
-        [success, content, size] = _bookmarksFile.load_contents(null);
+        [success, content, size] = file.load_contents(null);
     } catch(e) {
         log("ERROR: " + e.message);
         return;
     }
 
-    if (! success) {
-        return;
-    }
+    if (success) {
+        content = String(content);
+        content = content.replace(/^<\?xml version=["'][0-9\.]+["']\?>/, '');
 
-    content = String(content);
-    content = content.replace(/^<\?xml version=["'][0-9\.]+["']\?>/, '');
+        default xml namespace = 'http://purl.org/rss/1.0/';
+        let xmlData = new XML(content);
 
-    default xml namespace = 'http://purl.org/rss/1.0/';
-    let xmlData = new XML(content);
-    let xmlItems = xmlData.item;
-
-    for (let i in xmlItems) {
-        let xmlItem = xmlItems[i];
-
-        bookmarks.push({
-            appInfo: _appInfo,
-            name: String(xmlItem.title),
-            score: 0,
-            uri: String(xmlItem.link)
-        });
+        for (let i in xmlData.item) {
+            bookmarks.push({
+                appInfo: appInfo,
+                name: String(xmlData.item[i].title),
+                score: 0,
+                uri: String(xmlData.item[i].link)
+            });
+        }
     }
 }
 
 function _reset() {
-    _appInfo = null;
-    _bookmarksFile = null;
     _bookmarksMonitor = null;
     _callbackId = null;
     bookmarks = [];
 }
 
 function init() {
-    if (_foundApps.length == 0) {
-        return;
+    let foundApps = _appSystem.initial_search(['epiphany']);
+
+    if (foundApps.length > 0) {
+        let appInfo = foundApps[0].get_app_info();
+
+        let bookmarksFile = Gio.File.new_for_path(GLib.build_filenamev(
+            [GLib.get_user_config_dir(), 'epiphany', 'bookmarks.rdf']));
+
+        if (bookmarksFile.query_exists(null)) {
+            _bookmarksMonitor = bookmarksFile.monitor_file(
+                Gio.FileMonitorFlags.NONE, null);
+            _callbackId = _bookmarksMonitor.connect(
+                'changed', Lang.bind(this, _readBookmarks, appInfo));
+
+            _readBookmarks(null, bookmarksFile, null, null, appInfo);
+        } else {
+            _reset();
+            return;
+        }
     }
-
-    _appInfo = _foundApps[0].get_app_info();
-
-    _bookmarksFile = Gio.File.new_for_path(GLib.build_filenamev(
-        [GLib.get_user_config_dir(), 'epiphany', 'bookmarks.rdf']));
-
-    if (! _bookmarksFile.query_exists(null)) {
-        _reset();
-        return;
-    }
-
-    _bookmarksMonitor = _bookmarksFile.monitor_file(
-        Gio.FileMonitorFlags.NONE, null);
-    _callbackId = _bookmarksMonitor.connect(
-        'changed', Lang.bind(this, _readBookmarks));
-
-    _readBookmarks();
 }
 
 function deinit() {

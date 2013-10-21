@@ -86,18 +86,14 @@ function _rateMatch(bookmark, term) {
 
     if (nameIndex == 0) {
         score += 3;
-    } else {
-        if (nameIndex > 0) {
-            score += 2;
-        }
+    } else if (nameIndex > 0) {
+        score += 2;
     }
 
     if (uriIndex == 0) {
         score += 2;
-    } else {
-        if (uriIndex > 0) {
-            score += 1;
-        }
+    } else if (uriIndex > 0) {
+        score += 1;
     }
 
     return score;
@@ -119,7 +115,6 @@ const SearchBookmarks = new Lang.Class({
     },
 
     _searchBookmarks: function(terms) {
-        let searchResults = [];
         let bookmarks = [];
 
         bookmarks = bookmarks.concat(Chromium.bookmarks);
@@ -129,25 +124,25 @@ const SearchBookmarks = new Lang.Class({
         bookmarks = bookmarks.concat(Midori.bookmarks);
         bookmarks = bookmarks.concat(Opera.bookmarks);
 
-        for (let i = 0; i < bookmarks.length; i++) {
-            let bookmark = bookmarks[i];
+        let searchResults = [];
 
+        for (let i = 0; i < bookmarks.length; i++) {
             for (let j = 0; j < terms.length; j++) {
                 // Terms are treated as logical AND
-                if (j == 0 || bookmark.score > 0) {
+                if (j == 0 || bookmarks[i].score > 0) {
                     let term = terms[j].toLocaleLowerCase();
-                    let score = _rateMatch(bookmark, term);
+                    let score = _rateMatch(bookmarks[i], term);
 
                     if (score > 0) {
-                        bookmark.score += score;
+                        bookmarks[i].score += score;
                     } else {
-                        bookmark.score = 0;
+                        bookmarks[i].score = 0;
                     }
                 }
             }
 
-            if (bookmark.score > 0) {
-                searchResults.push(bookmark);
+            if (bookmarks[i].score > 0) {
+                searchResults.push(bookmarks[i]);
             }
         }
 

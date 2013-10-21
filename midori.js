@@ -35,20 +35,15 @@ const Lang = imports.lang;
 const Main = imports.ui.main;
 
 const _appSystem = Shell.AppSystem.get_default();
-const _foundApps = _appSystem.initial_search(['midori']);
 const _midoriDir = GLib.build_filenamev([GLib.get_user_config_dir(), 'midori']);
 
-var _appInfo = null;
-var _bookmarksFile = null;
 var _bookmarksMonitor = null;
 var _callbackId = null;
 var _connection = null;
 var bookmarks = [];
 
-function _readBookmarks() {
+function _readBookmarks(monitor, file, otherFile, eventType, appInfo) {
     bookmarks = [];
-
-    let result;
 
     if (! _connection) {
         try {
@@ -60,6 +55,8 @@ function _readBookmarks() {
             return;
         }
     }
+
+    let result;
 
     try {
         result = _connection.execute_select_command(
@@ -84,7 +81,7 @@ function _readBookmarks() {
         }
 
         bookmarks.push({
-            appInfo: _appInfo,
+            appInfo: appInfo,
             name: name,
             score: 0,
             uri: uri
@@ -97,8 +94,6 @@ function _reset() {
         _connection.close();
     }
 
-    _appInfo = null;
-    _bookmarksFile = null;
     _bookmarksMonitor = null;
     _callbackId = null;
     _connection = null;
@@ -106,30 +101,27 @@ function _reset() {
 }
 
 function init() {
-    if (! Gda) {
-        return;
+    if (Gda) {
+        let foundApps = _appSystem.initial_search(['midori']);
+
+        if (foundApps.length > 0) {
+            let appInfo = foundApps[0].get_app_info();
+
+            let bookmarksFile = Gio.File.new_for_path(GLib.build_filenamev(
+                [_midoriDir, 'bookmarks.db']));
+
+            if (bookmarksFile.query_exists(null)) {
+                _bookmarksMonitor = bookmarksFile.monitor_file(
+                    Gio.FileMonitorFlags.NONE, null);
+                _callbackId = _bookmarksMonitor.connect(
+                    'changed', Lang.bind(this, _readBookmarks, appInfo));
+
+                _readBookmarks(null, bookmarksFile, null, null, appInfo);
+            } else {
+                _reset();
+            }
+        }
     }
-
-    if (_foundApps.length == 0) {
-        return;
-    }
-
-    _appInfo = _foundApps[0].get_app_info();
-
-    _bookmarksFile = Gio.File.new_for_path(GLib.build_filenamev(
-        [_midoriDir, 'bookmarks.db']));
-
-    if (! _bookmarksFile.query_exists(null)) {
-        _reset();
-        return;
-    }
-
-    _bookmarksMonitor = _bookmarksFile.monitor_file(
-        Gio.FileMonitorFlags.NONE, null);
-    _callbackId = _bookmarksMonitor.connect(
-        'changed', Lang.bind(this, _readBookmarks));
-
-    _readBookmarks();
 }
 
 function deinit() {
