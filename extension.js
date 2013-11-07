@@ -164,7 +164,13 @@ const SearchBookmarks = new Lang.Class({
     },
 
     getInitialResultSet: function(terms) {
-        this.searchSystem.pushResults(this, this._searchBookmarks(terms));
+        let versionArray = Config.PACKAGE_VERSION.split('.');
+
+        if (version[0] == 3 && version[1] >= 9) {
+            this.searchSystem.setResults(this, this._searchBookmarks(terms));
+        } else {
+            this.searchSystem.pushResults(this, this._searchBookmarks(terms));
+        }
     },
 
     getSubsearchResultSet: function(previousResults, terms) {
