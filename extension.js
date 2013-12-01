@@ -169,6 +169,11 @@ const SearchBookmarks = new Lang.Class({
         Opera.deinit();
     },
 
+    // GNOME Shell >= 3.9
+    filterResults: function(results, maxNumber) {
+        return results.slice(0, maxNumber);
+    },
+
     getInitialResultSet: function(terms) {
         let versionArray = Config.PACKAGE_VERSION.split('.');
 
