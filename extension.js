@@ -151,12 +151,6 @@ const SearchBookmarks = new Lang.Class({
         id.appInfo.launch_uris([id.uri], null);
     },
 
-    // GNOME Shell <= 3.8
-    createResultActor: function(resultMeta, terms) {
-        return null;
-    },
-
-    // GNOME Shell >= 3.9
     createResultObject: function(resultMeta, terms) {
         return null;
     },
@@ -169,19 +163,12 @@ const SearchBookmarks = new Lang.Class({
         Opera.deinit();
     },
 
-    // GNOME Shell >= 3.9
     filterResults: function(results, maxNumber) {
         return results.slice(0, maxNumber);
     },
 
     getInitialResultSet: function(terms) {
-        let versionArray = Config.PACKAGE_VERSION.split('.');
-
-        if (versionArray[0] == 3 && versionArray[1] >= 9) {
-            this.searchSystem.setResults(this, this._searchBookmarks(terms));
-        } else {
-            this.searchSystem.pushResults(this, this._searchBookmarks(terms));
-        }
+        this.searchSystem.setResults(this, this._searchBookmarks(terms));
     },
 
     getSubsearchResultSet: function(previousResults, terms) {
@@ -208,8 +195,6 @@ const SearchBookmarks = new Lang.Class({
         if (callback) {
             callback(results);
         }
-
-        return results;
     }
 });
 
