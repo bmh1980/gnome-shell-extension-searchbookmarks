@@ -7,7 +7,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: gnome-shell-extension-searchbookmarks 3\n"
-"Report-Msgid-Bugs-To: bmh1980de@gmail.com\n"
+"Report-Msgid-Bugs-To: bmh1980@posteo.org\n"
 "POT-Creation-Date: 2013-01-10 14:08+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"

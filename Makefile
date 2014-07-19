@@ -12,7 +12,7 @@ XGETTEXT_ARGS   = -d $(GETTEXT_PACKAGE) --from-code=UTF-8 -k_ -kN_ \
                   --copyright-holder='Marcus Habermehl' \
                   --package-name=$(PACKAGE_NAME) \
                   --package-version=$(PACKAGE_VERSION) \
-                  --msgid-bugs-address=bmh1980de@gmail.com
+                  --msgid-bugs-address=bmh1980@posteo.org
 
 DATADIR ?= /usr/share
 
