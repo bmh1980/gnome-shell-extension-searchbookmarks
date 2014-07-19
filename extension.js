@@ -43,7 +43,7 @@ const Opera = _thisExtension.imports.opera;
 var _searchBookmarksInstance = null;
 
 /**
- * _bookmarksSort:
+ * _resultSort:
  * @a: Object created by a _readBookmarks function
  * @b: Object created by a _readBookmarks function
  *
@@ -52,7 +52,7 @@ var _searchBookmarksInstance = null;
  * 1. descending by the score
  * 2. ascending by the name
 */
-function _bookmarksSort(a, b) {
+function _resultSort(a, b) {
     if (a.score < b.score) return 1;
     if (a.score > b.score) return -1;
     if (a.name < b.name) return -1;
@@ -143,7 +143,7 @@ const SearchBookmarks = new Lang.Class({
             }
         }
 
-        searchResults.sort(_bookmarksSort);
+        searchResults.sort(_resultSort);
         return searchResults;
     },
 
