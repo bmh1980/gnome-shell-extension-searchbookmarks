@@ -1,6 +1,6 @@
 GETTEXT_PACKAGE = searchbookmarks
 PACKAGE_NAME    = gnome-shell-extension-$(GETTEXT_PACKAGE)
-PACKAGE_VERSION = 9
+PACKAGE_VERSION = 10
 EXTENSION_UUID  = $(GETTEXT_PACKAGE)@bmh1980de.gmail.com
 
 FILES = metadata.json *.js
