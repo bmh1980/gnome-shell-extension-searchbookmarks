@@ -3,8 +3,7 @@ PACKAGE_NAME    = gnome-shell-extension-$(GETTEXT_PACKAGE)
 PACKAGE_VERSION = 9
 EXTENSION_UUID  = $(GETTEXT_PACKAGE)@bmh1980de.gmail.com
 
-FILES = chrome.js epiphany.js extension.js metadata.json midori.js mozilla.js \
-        opera.js
+FILES = metadata.json *.js
 
 INTLTOOL_UPDATE = XGETTEXT_ARGS="$(XGETTEXT_ARGS)" \
                   intltool-update -g $(GETTEXT_PACKAGE)
