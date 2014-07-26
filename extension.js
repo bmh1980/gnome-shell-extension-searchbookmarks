@@ -25,7 +25,6 @@ const Lang = imports.lang;
 const Config = imports.misc.config;
 const ExtensionUtils = imports.misc.extensionUtils;
 const Main = imports.ui.main;
-const Search = imports.ui.search;
 const St = imports.gi.St;
 
 const _gettextDomain = Gettext.domain('searchbookmarks');
@@ -102,7 +101,7 @@ const SearchBookmarks = new Lang.Class({
     Name: 'SearchBookmarks',
 
     _init: function() {
-        this.title = _("BOOKMARKS");
+        this.id = 'searchbookmarks@bmh1980de.gmail.com';
         this.searchSystem = null;
         this.modules = [Chrome, Epiphany, Mozilla, Midori, Opera];
     },
@@ -177,26 +176,15 @@ const SearchBookmarks = new Lang.Class({
         this.searchSystem.setResults(this, searchResults);
     },
 
-    getResultMeta: function(id) {
-        let createIcon = function(size) {
-            return new St.Icon({gicon: id.appInfo.get_icon(), icon_size: size});
-        };
-
-        return {
-            id: id,
-            appInfo: id.appInfo,
-            createIcon: createIcon,
-            name: id.name,
-            uri: id.uri
-        };
-    },
-
     getResultMetas: function(ids, callback) {
-        let results = ids.map(this.getResultMeta);
+        let results = [];
 
-        if (callback) {
-            callback(results);
+        for (let i = 0; i < ids.length; i++) {
+            let id = ids[i];
+            results.push({id: id, name: id.title})
         }
+
+        callback(results);
     }
 });
 
