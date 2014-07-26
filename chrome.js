@@ -108,15 +108,6 @@ function getChromeBookmarks(appName) {
 function getBookmarks() {
     let bookmarks = []
 
-    bookmarks.concat(getChromeBookmarks('chromium'));
-    bookmarks.concat(getChromeBookmarks('google-chrome'));
-
-    return bookmarks;
-}
-
-function getBookmarks() {
-    let bookmarks = []
-
     let chromiumBookmarks = getChromeBookmarks('chromium');
 
     for (let i = 0; i < chromiumBookmarks.length; i++) {
