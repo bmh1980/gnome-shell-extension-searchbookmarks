@@ -140,5 +140,19 @@ function getMozillaBookmarks(appName) {
 }
 
 function getBookmarks() {
-    return getMozillaBookmarks('firefox');
+    let bookmarks = []
+
+    let firefoxBookmarks = getMozillaBookmarks('firefox');
+
+    for (let i = 0; i < firefoxBookmarks.length; i++) {
+        bookmarks.push(firefoxBookmarks[i]);
+    }
+
+    let seamonkeyBookmarks = getMozillaBookmarks('seamonkey');
+
+    for (let i = 0; i < seamonkeyBookmarks.length; i++) {
+        bookmarks.push(seamonkeyBookmarks[i]);
+    }
+
+    return bookmarks;
 }
