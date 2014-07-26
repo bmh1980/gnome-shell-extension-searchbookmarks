@@ -110,12 +110,12 @@ const SearchBookmarks = new Lang.Class({
         id.appInfo.launch_uris([id.uri], null);
     },
 
-    createResultObject: function(resultMeta, terms) {
+    createResultObject: function(metaInfo, terms) {
         return null;
     },
 
-    filterResults: function(results, maxNumber) {
-        return results.slice(0, maxNumber);
+    filterResults: function(results, maxResults) {
+        return results.slice(0, maxResults);
     },
 
     getInitialResultSet: function(terms) {
