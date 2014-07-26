@@ -104,47 +104,7 @@ const SearchBookmarks = new Lang.Class({
     _init: function() {
         this.title = _("BOOKMARKS");
         this.searchSystem = null;
-
-        Chrome.init();
-        Epiphany.init();
-        Firefox.init();
-        Midori.init();
-        Opera.init();
-    },
-
-    _searchBookmarks: function(terms) {
-        let bookmarks = [];
-
-        bookmarks = bookmarks.concat(Chrome.bookmarks);
-        bookmarks = bookmarks.concat(Epiphany.bookmarks);
-        bookmarks = bookmarks.concat(Firefox.bookmarks);
-        bookmarks = bookmarks.concat(Midori.bookmarks);
-        bookmarks = bookmarks.concat(Opera.bookmarks);
-
-        let searchResults = [];
-
-        for (let i = 0; i < bookmarks.length; i++) {
-            for (let j = 0; j < terms.length; j++) {
-                // Terms are treated as logical AND
-                if (j == 0 || bookmarks[i].score > 0) {
-                    let term = terms[j].toLocaleLowerCase();
-                    let score = _rateMatch(bookmarks[i], term);
-
-                    if (score > 0) {
-                        bookmarks[i].score += score;
-                    } else {
-                        bookmarks[i].score = 0;
-                    }
-                }
-            }
-
-            if (bookmarks[i].score > 0) {
-                searchResults.push(bookmarks[i]);
-            }
-        }
-
-        searchResults.sort(_resultSort);
-        return searchResults;
+        this.modules = [Chrome, Epiphany, Mozilla, Midori, Opera];
     },
 
     activateResult: function(id) {
@@ -155,24 +115,66 @@ const SearchBookmarks = new Lang.Class({
         return null;
     },
 
-    destroy: function() {
-        Chrome.deinit();
-        Epiphany.deinit();
-        Firefox.deinit();
-        Midori.deinit();
-        Opera.deinit();
-    },
-
     filterResults: function(results, maxNumber) {
         return results.slice(0, maxNumber);
     },
 
     getInitialResultSet: function(terms) {
-        this.searchSystem.setResults(this, this._searchBookmarks(terms));
+        let searchResults = [];
+
+        for (let i = 0; i < this.modules.length; i++) {
+            let bookmarks = this.modules[i].getBookmarks();
+
+            for (let j = 0; j < bookmarks.length; j++) {
+                for (let k = 0; k < terms.length, k++) {
+                    // Terms are treated as logical AND
+                    if (k == 0 || bookmarks[j].score > 0) {
+                        let term = terms[k].toLocaleLowerCase();
+                        let score = _rateMatch(bookmarks[j], term);
+
+                        if (score > 0) {
+                            bookmarks[j].score += score;
+                        } else {
+                            bookmarks[j].score = 0;
+                        }
+                    }
+                }
+
+                if (bookmarks[j].score > 0) {
+                    searchResults.push(bookmarks[j]);
+                }
+            }
+        }
+
+        searchResults.sort(_resultSort);
+        this.searchSystem.setResults(this, searchResults);
     },
 
     getSubsearchResultSet: function(previousResults, terms) {
-        return this.getInitialResultSet(terms);
+        let searchResults = [];
+
+        for (let i = 0; i < previousResults.length; i++) {
+            for (let j = 0; j < terms.length, j++) {
+                // Terms are treated as logical AND
+                if (j == 0 || previousResults[i].score > 0) {
+                    let term = terms[j].toLocaleLowerCase();
+                    let score = _rateMatch(previousResults[i], term);
+
+                    if (score > 0) {
+                        previousResults[i].score += score;
+                    } else {
+                        previousResults[i].score = 0;
+                    }
+                }
+            }
+
+            if (previousResults[i].score > 0) {
+                searchResults.push(previousResults[i]);
+            }
+        }
+
+        searchResults.sort(_resultSort);
+        this.searchSystem.setResults(this, searchResults);
     },
 
     getResultMeta: function(id) {
@@ -209,24 +211,16 @@ function init() {
 }
 
 function enable() {
-    if (! Firefox.Gda) {
+    try {
+        const Gda = imports.gi.Gda;
+    } catch(e) {
         /**
          * TODO: How to wrap translatable lines in GJS? ' \n' is not
          * allowed by GJS. ',\n' and '\\n' is not handled by intltool/xgettext.
         */
         Main.notifyError(
-            _("Search Firefox bookmarks disabled"),
-            _("The library 'Gda-5.0.typelib' could not be imported. If you want to search in Firefox bookmarks, you must install the package that contains the file 'Gda-5.0.typelib'."));
-    }
-
-    if (! Midori.Gda) {
-        /**
-         * TODO: How to wrap translatable lines in GJS? ' \n' is not
-         * allowed by GJS. ',\n' and '\\n' is not handled by intltool/xgettext.
-        */
-        Main.notifyError(
-            _("Search Midori bookmarks disabled"),
-            _("The library 'Gda-5.0.typelib' could not be imported. If you want to search in Midori bookmarks, you must install the package that contains the file 'Gda-5.0.typelib'."));
+            _("Search Midori and Mozilla bookmarks disbaled"),
+            _("The GObject Introspection library 'Gda' could not be imported. If you want to search in Midori or Mozilla bookmarks, you must install the package that contains the file 'Gda-5.0.typelib'."));
     }
 
     if (_searchBookmarksInstance == null) {
@@ -238,7 +232,6 @@ function enable() {
 function disable() {
     if (_searchBookmarksInstance != null) {
         Main.overview.removeSearchProvider(_searchBookmarksInstance);
-        _searchBookmarksInstance.destroy();
         _searchBookmarksInstance = null;
     }
 }

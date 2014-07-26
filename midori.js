@@ -17,121 +17,82 @@
  * USA.
 */
 
+// External imports
+var Gda;
+const GLib = imports.gi.GLib;
+
 try {
-    var Gda = imports.gi.Gda;
+    Gda = imports.gi.Gda;
 } catch(e) {
-    var Gda = null;
 }
 
-// External imports
-const Gio = imports.gi.Gio;
-const GLib = imports.gi.GLib;
+// Internal imports
 const Shell = imports.gi.Shell;
 
-// Gjs imports
-const Lang = imports.lang;
+const appSystem = Shell.AppSystem.get_default();
 
-// Internal imports
-const Main = imports.ui.main;
+function getBookmarks() {
+    let bookmarks = [];
 
-const _appSystem = Shell.AppSystem.get_default();
-const _midoriDir = GLib.build_filenamev([GLib.get_user_config_dir(), 'midori']);
-
-var _bookmarksMonitor = null;
-var _callbackId = null;
-var _connection = null;
-var bookmarks = [];
-
-function _readBookmarks(monitor, file, otherFile, eventType, appInfo) {
-    bookmarks = [];
-
-    if (! _connection) {
-        try {
-            _connection = Gda.Connection.open_from_string(
-                'SQLite', 'DB_DIR=' + _midoriDir + ';DB_NAME=bookmarks', null,
-                Gda.ConnectionOptions.READ_ONLY);
-        } catch(e) {
-            log("ERROR: " + e.message);
-            return;
-        }
+    if (typeof Gda == 'undefined') {
+        return bookmarks;
     }
 
-    let result;
+    let appInfos = appSystem.initial_search(['midori']);
+
+    if (appInfos.length == 0) {
+        return bookmarks;
+    }
+
+    let appInfo = appInfos[0].get_app_info();
+    let cfgDir = GLib.build_filenamev([GLib.get_user_config_dir(), 'midori']);
+    let filePath = GLib.build_filenamev([cfgDir, 'bookmarks.db']);
+
+    if (! GLib.file_test(filePath, GLib.FileTest.EXISTS)) {
+        return bookmarks;
+    }
+
+    let con, result;
 
     try {
-        result = _connection.execute_select_command(
+        con = Gda.Connection.open_from_string(
+            'SQLite', 'DB_DIR=' + cfgDir + ';DB_NAME=bookmarks.db', null,
+            Gda.ConnectionOptions.READ_ONLY);
+    } catch(e) {
+        logError(e);
+        return bookmarks;
+    }
+
+    try {
+        result = con.execute_select_command(
             'SELECT title, uri FROM bookmarks');
     } catch(e) {
-        log("ERROR: " + e.message);
-        return;
+        logError(e);
+        con.close();
+        return bookmarks;
     }
 
     let nRows = result.get_n_rows();
 
     for (let row = 0; row < nRows; row++) {
-        let name;
-        let uri;
+        let title, uri;
 
         try {
-            name = result.get_value_at(0, row);
+            title = result.get_value_at(0, row);
             uri = result.get_value_at(1, row);
         } catch(e) {
-            log("ERROR: " + e.message);
+            logError(e);
             continue;
         }
 
         bookmarks.push({
             appInfo: appInfo,
-            name: name,
+            name: title,
             score: 0,
             uri: uri
-        });
-    }
-}
-
-function _reset() {
-    if (_connection) {
-        _connection.close();
+        })
     }
 
-    _bookmarksMonitor = null;
-    _callbackId = null;
-    _connection = null;
-    bookmarks = [];
-}
-
-function init() {
-    if (Gda) {
-        let foundApps = _appSystem.initial_search(['midori']);
-
-        if (foundApps.length > 0) {
-            let appInfo = foundApps[0].get_app_info();
-
-            let bookmarksFile = Gio.File.new_for_path(GLib.build_filenamev(
-                [_midoriDir, 'bookmarks.db']));
-
-            if (bookmarksFile.query_exists(null)) {
-                _bookmarksMonitor = bookmarksFile.monitor_file(
-                    Gio.FileMonitorFlags.NONE, null);
-                _callbackId = _bookmarksMonitor.connect(
-                    'changed', Lang.bind(this, _readBookmarks, appInfo));
-
-                _readBookmarks(null, bookmarksFile, null, null, appInfo);
-            } else {
-                _reset();
-            }
-        }
-    }
-}
-
-function deinit() {
-    if (_bookmarksMonitor) {
-        if (_callbackId) {
-            _bookmarksMonitor.disconnect(_callbackId);
-        }
-
-        _bookmarksMonitor.cancel();
-    }
-
-    _reset();
+    con.close();
+    return bookmarks;
 }

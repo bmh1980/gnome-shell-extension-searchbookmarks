@@ -17,197 +17,124 @@
  * USA.
 */
 
+// External imports
+var Gda;
+const GLib = imports.gi.GLib;
+
 try {
-    var Gda = imports.gi.Gda;
+    Gda = imports.gi.Gda;
 } catch(e) {
-    var Gda = null;
 }
 
-// External imports
-const Gio = imports.gi.Gio;
-const GLib = imports.gi.GLib;
+// Internal imports
 const Shell = imports.gi.Shell;
 
-// Gjs imports
-const Lang = imports.lang;
+const appSystem = Shell.AppSystem.get_default();
 
-// Internal imports
-const Main = imports.ui.main;
+function getBookmarks() {
+    let bookmarks = [];
 
-const _appSystem = Shell.AppSystem.get_default();
-const _firefoxDir = GLib.build_filenamev([GLib.get_home_dir(), '.mozilla',
-                                          'firefox']);
+    if (typeof Gda == 'undefined') {
+        return bookmarks;
+    }
 
-var _bookmarksMonitor = null;
-var _callbackId1 = null;
-var _callbackId2 = null;
-var _connection = null;
-var _profileDir = null;
-var _profilesMonitor = null;
-var bookmarks = [];
+    let appInfos = appSystem.initial_search(['firefox']);
 
-function _readBookmarks(monitor, file, otherFile, eventType, appInfo) {
-    bookmarks = [];
+    if (appInfos.length == 0) {
+        return bookmarks;
+    }
 
-    if (! _connection) {
-        try {
-            _connection = Gda.Connection.open_from_string(
-                'SQLite', 'DB_DIR=' + _profileDir + ';DB_NAME=places.sqlite',
-                null, Gda.ConnectionOptions.READ_ONLY);
-        } catch(e) {
-            log("ERROR: " + e.message);
-            return;
+    let appInfo = appInfos[0].get_app_info();
+    let cfgPath = GLib.build_filenamev(
+        [GLib.get_home_dir(), '.mozilla', 'firefox']);
+    let iniPath = GLib.build_filenamev([cfgPath, 'profiles.ini']);
+
+    let profilePath;
+
+    if (GLib.file_test(iniPath, GLib.FileTest.EXISTS)) {
+        let iniFile = GLib.KeyFile.new();
+        let groups, nGroups;
+
+        iniFile.load_from_file(iniPath, GLib.KeyFileFlags.NONE);
+
+        [groups, nGroups] = iniFile.get_groups();
+
+        for (let i = 0; i < nGroups; i++) {
+            let isRelative, profileName, profileDir;
+
+            try {
+                isRelative = iniFile.get_boolean(groups[i], 'IsRelative');
+                profileName = iniFile.get_string(groups[i], 'Name');
+                profileDir = iniFile.get_string(groups[i], 'Path');
+            } catch(e) {
+                continue;
+            }
+
+            if (profileName == 'default') {
+                if (isRelative) {
+                    profilePath = GLib.build_filenamev(
+                        [cfgPath, profileDir]);
+                } else {
+                    profilePath = profileDir;
+                }
+            }
         }
     }
 
-    let result;
+    if (typeof profilePath == 'undefined') {
+        return bookmarks;
+    }
+
+    let filePath = GLib.build_filenamev([profilePath, 'places.sqlite']);
+
+    if (! GLib.file_test(filePath, GLib.FileTest.EXISTS)) {
+        return bookmarks;
+    }
+
+    let con, result;
 
     try {
-        result = _connection.execute_select_command(
-            'SELECT moz_bookmarks.title, moz_places.url FROM moz_bookmarks ' +
-            'INNER JOIN moz_places ON (moz_bookmarks.fk = moz_places.id) ' +
-            'WHERE moz_bookmarks.fk NOT NULL AND moz_bookmarks.title NOT ' +
-            'NULL AND moz_bookmarks.type = 1');
+        con = Gda.Connection.open_from_string(
+            'SQLite', 'DB_DIR=' + profilePath + ';DB_NAME=places.sqlite',
+            null, Gda.ConnectionOptions.READ_ONLY);
     } catch(e) {
-        log("ERROR: " + e.message);
-        return;
+        logError(e);
+        return bookmarks;
+    }
+
+    try {
+        result = con.execute_select_command(
+            'SELECT moz_bookmarks.title, moz_places.url FROM ' +
+            'moz_bookmarks INNER JOIN moz_places ON (moz_bookmarks.fk ' +
+            '= moz_places.id) WHERE moz_bookmarks.fk NOT NULL AND ' +
+            'moz_bookmarks.title NOT NULL AND moz_bookmarks.type = 1');
+    } catch(e) {
+        logError(e);
+        con.close();
+        return bookmarks;
     }
 
     let nRows = result.get_n_rows();
 
     for (let row = 0; row < nRows; row++) {
-        let name;
-        let uri;
+        let title, uri;
 
         try {
-            name = result.get_value_at(0, row);
+            title = result.get_value_at(0, row);
             uri = result.get_value_at(1, row);
         } catch(e) {
-            log("ERROR: " + e.message);
+            logError(e);
             continue;
         }
 
         bookmarks.push({
             appInfo: appInfo,
-            name: name,
+            name: title,
             score: 0,
             uri: uri
         });
     }
-}
 
-function _readProfiles(monitor, file, otherFile, eventType, appInfo) {
-    let keyFile = new GLib.KeyFile();
-
-    keyFile.load_from_file(file.get_path(), GLib.KeyFileFlags.NONE);
-
-    let groups;
-    let nGroups;
-
-    [groups, nGroups] = keyFile.get_groups();
-
-    for (let i = 0; i < nGroups; i++) {
-        let profileName;
-        let path;
-        let relative;
-
-        try {
-            profileName = keyFile.get_string(groups[i], 'Name');
-            path = keyFile.get_string(groups[i], 'Path');
-            relative = keyFile.get_boolean(groups[i], 'IsRelative');
-        } catch(e) {
-            continue;
-        }
-
-        if (profileName == 'default') {
-            if (relative) {
-                _profileDir = GLib.build_filenamev([_firefoxDir, path]);
-            } else {
-                _profileDir = path;
-            }
-
-            if (_bookmarksMonitor) {
-                _bookmarksMonitor.cancel();
-                _bookmarksMonitor = null;
-            }
-
-            if (_connection) {
-                _connection.close();
-                _connection = null;
-            }
-
-            let bookmarksFile = Gio.File.new_for_path(
-                GLib.build_filenamev([_profileDir, 'places.sqlite']));
-
-            if (bookmarksFile.query_exists(null)) {
-                _bookmarksMonitor = bookmarksFile.monitor_file(
-                    Gio.FileMonitorFlags.NONE, null);
-                _callbackId2 = _bookmarksMonitor.connect(
-                    'changed', Lang.bind(this, _readBookmarks, appInfo));
-
-                _readBookmarks(null, bookmarksFile, null, null, appInfo);
-                return;
-            }
-        }
-    }
-
-    // If we reached this line, no default profile was found.
-    deinit();
-}
-
-function _reset() {
-    if (_connection) {
-        _connection.close();
-    }
-
-    _bookmarksMonitor = null;
-    _callbackId1 = null;
-    _callbackId2 = null;
-    _connection = null;
-    _profileDir = null;
-    _profilesMonitor = null;
-    bookmarks = [];
-}
-
-function init() {
-    if (Gda) {
-        let foundApps = _appSystem.initial_search(['firefox']);
-
-        if (foundApps.length > 0) {
-            let appInfo = foundApps[0].get_app_info();
-            let profilesFile = Gio.File.new_for_path(GLib.build_filenamev(
-                [_firefoxDir, 'profiles.ini']));
-
-            if (profilesFile.query_exists(null)) {
-                _profilesMonitor = profilesFile.monitor_file(
-                    Gio.FileMonitorFlags.NONE, null);
-                _callbackId1 = _profilesMonitor.connect(
-                    'changed', Lang.bind(this, _readProfiles, appInfo));
-
-                _readProfiles(null, profilesFile, null, null, appInfo);
-            } else {
-                _reset();
-            }
-        }
-    }
-}
-
-function deinit() {
-    if (_bookmarksMonitor) {
-        if (_callbackId2) {
-            _bookmarksMonitor.disconnect(_callbackId2);
-        }
-
-        _bookmarksMonitor.cancel();
-    }
-
-    if (_profilesMonitor) {
-        if (_callbackId1) {
-            _profilesMonitor.disconnect(_callbackId1);
-        }
-
-        _profilesMonitor.cancel();
-    }
-
-    _reset();
+    con.close();
+    return bookmarks;
 }

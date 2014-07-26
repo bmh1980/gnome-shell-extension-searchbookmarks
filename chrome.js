@@ -1,5 +1,6 @@
 /**
  * Copyright (C) 2012-2014 Marcus Habermehl <bmh1980@posteo.org>
+ *               2013 David Charte <http://github.com/fdavidcl>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -15,137 +16,118 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301,
  * USA.
- *
- * Source code modified by David Charte <http://github.com/fdavidcl>
 */
 
 // External imports
 const Gio = imports.gi.Gio;
 const GLib = imports.gi.GLib;
-const Shell = imports.gi.Shell;
-
-// Gjs imports
-const Lang = imports.lang;
 
 // Internal imports
-const Main = imports.ui.main;
+const Shell = imports.gi.Shell;
 
-const _appSystem = Shell.AppSystem.get_default();
-const _appNames = new Array('chromium', 'google-chrome');
-
-var _bookmarkMonitors = new Array(null, null);
-var _callbackIds = new Array(null, null);
-var bookmarks = new Array();
+const appSystem = Shell.AppSystem.get_default();
 
 /**
- * Function _extractBookmarks added by David Charte,
- * code from this function is taken from function
- * _readBookmarks.
- *
- * This function enables the extension to read bookmarks
- * from any folder.
- *
- * 10/10/2013
- * 
+ * Copyright (C) 2012 Marcus Habermehl <bmh1980@posteo.org>
+ *               2013 David Charte <http://github.com/fdavidcl>
+ *               2012 Marcus Habermehl <bmh1980@posteo.org>
 */ 
-function _extractBookmarks(node, appInfo) {
-    for (let idx in node.children) {
-        if (node.children[idx].type == 'url') {
-            bookmarks.push({
-                appInfo: appInfo,
-                name: node.children[idx].name,
-                score: 0,
-                uri: node.children[idx].url
-            });
-        } else if (node.children[idx].type == 'folder') {
-            _extractBookmarks(node.children[idx], appInfo);
+function extractBookmarks(node) {
+    let bookmarks = [];
+
+    for (let i in node.children) {
+        if (node.children[i].type == 'url') {
+            bookmarks.push([node.children[i].name, node.children[i].url]);
+        } else if (node.children[i].type == 'folder') {
+            let _bookmarks = extractBookmarks(node.children[i]);
+
+            for (let j = 0; j < _bookmarks.length; j++) {
+                bookmarks.push(_bookmarks[j]);
+            }
         }
     }
+
+    return bookmarks;
 }
 
-function _readBookmarks(monitor, file, otherFile, eventType, appInfo) {
-    bookmarks = [];
+function getChromeBookmarks(appName) {
+    let bookmarks = [];
 
-    let success;
-    let content;
-    let size;
+    let appInfos = appSystem.initial_search([appName]);
+
+    if (appInfos.length == 0) {
+        return bookmarks;
+    }
+
+    let appInfo = appInfos[0].get_app_info();
+    let file = Gio.File.new_for_path(GLib.build_filenamev(
+        [GLib.get_user_config_dir(), appName, 'Default', 'Bookmarks']));
+
+    if (! file.query_exists(null)) {
+        return bookmarks;
+    }
+
+    let success, content, size;
 
     try {
         [success, content, size] = file.load_contents(null);
     } catch(e) {
-        log("ERROR: " + e.message);
-        return;
+        logError(e);
+        return bookmarks;
     }
 
     if (success) {
-        let jsonResult;
+        let json;
 
         try {
-            jsonResult = JSON.parse(content);
+            json = JSON.parse(content);
         } catch(e) {
-            log("ERROR: " + e.message);
-            return;
+            logError(e);
+            return bookmarks;
         }
 
-        if (jsonResult.hasOwnProperty('roots')) {
-            for (let idx in jsonResult.roots) {
-                _extractBookmarks(jsonResult.roots[idx], appInfo);
+        if (json.hasOwnProperty('roots')) {
+            for (let i in json.roots) {
+                let _bookmarks = extractBookmarks(json.roots[i]);
+
+                for (let j = 0; j < _bookmarks.length; j++) {
+                    bookmarks.push({
+                        appInfo: appInfo,
+                        name: _bookmarks[j][0],
+                        score: 0,
+                        uri: _bookmarks[j][1]
+                    });
+                }
             }
         }
     }
+
+    return bookmarks;
 }
 
-function _reset(idx) {
-    if (idx) {
-        _bookmarkMonitors[idx] = null;
-        _callbackIds[idx] = null;
-    } else {
-        for (let idx in _appNames) {
-            _bookmarkMonitors[idx] = null;
-            _callbackIds[idx] = null;
-        }
+function getBookmarks() {
+    let bookmarks = []
 
-        bookmarks = new Array();
-    }
+    bookmarks.concat(getChromeBookmarks('chromium'));
+    bookmarks.concat(getChromeBookmarks('google-chrome'));
+
+    return bookmarks;
 }
 
-function init() {
-    for (let idx in _appNames) {
-        let foundApps = _appSystem.initial_search([_appNames[idx]]);
+function getBookmarks() {
+    let bookmarks = []
 
-        if (foundApps.length > 0) {
-            let appInfo = foundApps[0].get_app_info();
+    let chromiumBookmarks = getChromeBookmarks('chromium');
 
-            let bookmarksFile = Gio.File.new_for_path(GLib.build_filenamev(
-                [
-                    GLib.get_user_config_dir(), _appNames[idx], 'Default',
-                    'Bookmarks'
-                ]));
-
-            if (bookmarksFile.query_exists(null)) {
-                _bookmarkMonitors[idx] = bookmarksFile.monitor_file(
-                    Gio.FileMonitorFlags.NONE, null);
-                _callbackIds[idx] = _bookmarkMonitors[idx].connect(
-                    'changed', Lang.bind(this, _readBookmarks, appInfo));
-
-                _readBookmarks(null, bookmarksFile, null, null, appInfo);
-            } else {
-                _reset(idx);
-            }
-        }
-    }
-}
-
-function deinit() {
-    for (let idx in _bookmarkMonitors) {
-        if (_bookmarkMonitors[idx]) {
-            if (_callbackIds[idx]) {
-                _bookmarkMonitors[idx].disconnect(_callbackIds[idx]);
-            }
-
-            _bookmarkMonitors[idx].cancel();
-        }
+    for (let i = 0; i < chromiumBookmarks.length; i++) {
+        bookmarks.push(chromiumBookmarks[i]);
     }
 
-    _reset(null);
+    let googleChromeBookmarks = getChromeBookmarks('google-chrome');
+
+    for (let i = 0; i < googleChromeBookmarks.length; i++) {
+        bookmarks.push(googleChromeBookmarks[i]);
+    }
+
+    return bookmarks;
 }

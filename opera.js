@@ -20,104 +20,70 @@
 // External imports
 const Gio = imports.gi.Gio;
 const GLib = imports.gi.GLib;
-const Shell = imports.gi.Shell;
-
-// Gjs imports
-const Lang = imports.lang;
 
 // Internal imports
-const Main = imports.ui.main;
+const Shell = imports.gi.Shell;
 
-const _appSystem = Shell.AppSystem.get_default();
+const appSystem = Shell.AppSystem.get_default();
 
-var _bookmarksMonitor = null;
-var _callbackId = null;
-var bookmarks = [];
+function getBookmarks() {
+    let bookmarks = [];
 
-function _readBookmarks(monitor, file, otherFile, eventType, appInfo) {
-    bookmarks = [];
+    let appInfos = appSystem.initial_search(['opera']);
 
-    let success;
-    let content;
-    let size;
+    if (appInfos.length == 0) {
+        return bookmarks;
+    }
+
+    let appInfo = appInfos[0].get_app_info();
+    let file = Gio.File.new_for_path(GLib.build_filenamev(
+        [GLib.get_home_dir(), '.opera', 'bookmarks.adr']));
+
+    if (! file.query_exists(null)) {
+        return bookmarks;
+    }
+
+    let success, content, size;
 
     try {
         [success, content, size] = file.load_contents(null);
     } catch(e) {
-        log("ERROR: " + e.message);
-        return;
+        logError(e);
+        return bookmarks;
     }
 
     if (success) {
-        let lines = String(content).split("\n");
+        let contentStr = new String(content);
+        let lines = contentStr.split('\n');
 
-        let isURL = false;
-        let name = null;
-        let url = null;
+        let isUri = false;
+        let title = null;
+        let uri = null;
 
         for (let i = 0; i < lines.length; i++) {
             let line = lines[i].trim();
 
             if (line == "#URL") {
-                isURL = true;
-            } else if (isURL) {
+                isUri = true;
+            } else if (isUri) {
                 if (line.indexOf("NAME=") == 0) {
-                    name = line.split("NAME=")[1];
+                    title = line.split("NAME=")[1];
                 } else if (line.indexOf("URL=") == 0) {
-                    url = line.split("URL=")[1];
+                    uri = line.split("URL=")[1];
                 } else if (line == "") {
                     bookmarks.push({
                         appInfo: appInfo,
-                        name: name,
+                        name: title,
                         score: 0,
                         uri: url
                     });
-
-                    isURL = false;
-                    name = null;
-                    url = null;
+                    isUri = false;
+                    title = null;
+                    uri = null;
                 }
             }
         }
     }
-}
 
-function _reset() {
-    _bookmarksMonitor = null;
-    _callbackId = null;
-    bookmarks = [];
-}
-
-function init() {
-    let foundApps = _appSystem.initial_search(['opera']);
-
-    if (foundApps.length > 0) {
-        let appInfo = foundApps[0].get_app_info();
-
-        let bookmarksFile = Gio.File.new_for_path(GLib.build_filenamev(
-            [GLib.get_home_dir(), '.opera', 'bookmarks.adr']));
-
-        if (bookmarksFile.query_exists(null)) {
-            _bookmarksMonitor = bookmarksFile.monitor_file(
-                Gio.FileMonitorFlags.NONE, null);
-            _callbackId = _bookmarksMonitor.connect(
-                'changed', Lang.bind(this, _readBookmarks, appInfo));
-
-            _readBookmarks(null, bookmarksFile, null, null, appInfo);
-        } else {
-            _reset();
-        }
-    }
-}
-
-function deinit() {
-    if (_bookmarksMonitor) {
-        if (_callbackId) {
-            _bookmarksMonitor.disconnect(_callbackId);
-        }
-
-        _bookmarksMonitor.cancel();
-    }
-
-    _reset();
+    return bookmarks;
 }
