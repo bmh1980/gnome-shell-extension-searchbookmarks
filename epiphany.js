@@ -29,6 +29,7 @@ const Lang = imports.lang;
 const Main = imports.ui.main;
 
 const _appSystem = Shell.AppSystem.get_default();
+const regex = new RegExp('<title>(.+)</title>[\n ]*<link>(.+)</link>', 'g');
 
 var _bookmarksMonitor = null;
 var _callbackId = null;
@@ -50,17 +51,14 @@ function _readBookmarks(monitor, file, otherFile, eventType, appInfo) {
 
     if (success) {
         content = String(content);
-        content = content.replace(/^<\?xml version=["'][0-9\.]+["']\?>/, '');
+        let result;
 
-        default xml namespace = 'http://purl.org/rss/1.0/';
-        let xmlData = new XML(content);
-
-        for (let i in xmlData.item) {
+        while ((result = regex.exec(content)) !== null) {
             bookmarks.push({
                 appInfo: appInfo,
-                name: String(xmlData.item[i].title),
+                name: result[1],
                 score: 0,
-                uri: String(xmlData.item[i].link)
+                uri: result[2]
             });
         }
     }
