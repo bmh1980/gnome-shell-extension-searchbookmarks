@@ -24,14 +24,15 @@ const Lang = imports.lang;
 // Internal imports
 const Config = imports.misc.config;
 const ExtensionUtils = imports.misc.extensionUtils;
+const IconGrid = imports.ui.iconGrid;
 const Main = imports.ui.main;
-const St = imports.gi.St;
 
 const _gettextDomain = Gettext.domain('searchbookmarks');
 const _ = _gettextDomain.gettext;
 const _thisExtension = ExtensionUtils.getCurrentExtension();
 
 // Extension imports
+const Bookmark = _thisExtension.imports.bookmark;
 const Chrome = _thisExtension.imports.chrome;
 const Epiphany = _thisExtension.imports.epiphany;
 const Mozilla = _thisExtension.imports.mozilla;
@@ -43,8 +44,8 @@ var _searchBookmarksInstance = null;
 
 /**
  * _resultSort:
- * @a: Object created by a _readBookmarks function
- * @b: Object created by a _readBookmarks function
+ * @a: Bookmark.Bookmark
+ * @b: Bookmark.Bookmark
  *
  * Sort the list of bookmarks in the following order.
  *
@@ -59,44 +60,6 @@ function _resultSort(a, b) {
     return 0;
 }
 
-/**
- * _rateMatch:
- * @bookmark: Object created by a _readBookmarks function
- * @term: String to search for
- *
- * Rate the quality of matches.
- *
- * 5: Both, title *and* URI begin with the given term
- * 4: The title begin with the given term and the URI contains it
- * 4: The URI begin with the given term and the title contains it
- * 3: The title begin with the given term, but the URI does not contains it
- * 3: Both, title *and* URI contains the given term
- * 2: The URI begin with the given term, but the title does not contains it
- * 2: The title contains the given term, but the URI not
- * 1: The URI contains the given term, but the title not
- * 0: Neither title nor URI contains the given term
-*/
-function _rateMatch(bookmark, term) {
-    let nameIndex = bookmark.name.toLocaleLowerCase().indexOf(term);
-    let uriIndex = bookmark.uri.toLocaleLowerCase().indexOf(term);
-
-    let score = 0;
-
-    if (nameIndex == 0) {
-        score += 3;
-    } else if (nameIndex > 0) {
-        score += 2;
-    }
-
-    if (uriIndex == 0) {
-        score += 2;
-    } else if (uriIndex > 0) {
-        score += 1;
-    }
-
-    return score;
-}
-
 const SearchBookmarks = new Lang.Class({
     Name: 'SearchBookmarks',
 
@@ -107,11 +70,11 @@ const SearchBookmarks = new Lang.Class({
     },
 
     activateResult: function(id) {
-        id.appInfo.launch_uris([id.uri], null);
+        id.activate();
     },
 
     createResultObject: function(metaInfo, terms) {
-        return null;
+        return new Bookmark.BookmarkIcon(metaInfo.id);
     },
 
     filterResults: function(results, maxResults) {
@@ -125,19 +88,7 @@ const SearchBookmarks = new Lang.Class({
             let bookmarks = this.modules[i].getBookmarks();
 
             for (let j = 0; j < bookmarks.length; j++) {
-                for (let k = 0; k < terms.length, k++) {
-                    // Terms are treated as logical AND
-                    if (k == 0 || bookmarks[j].score > 0) {
-                        let term = terms[k].toLocaleLowerCase();
-                        let score = _rateMatch(bookmarks[j], term);
-
-                        if (score > 0) {
-                            bookmarks[j].score += score;
-                        } else {
-                            bookmarks[j].score = 0;
-                        }
-                    }
-                }
+                bookmarks[j].rate(terms);
 
                 if (bookmarks[j].score > 0) {
                     searchResults.push(bookmarks[j]);
@@ -153,19 +104,7 @@ const SearchBookmarks = new Lang.Class({
         let searchResults = [];
 
         for (let i = 0; i < previousResults.length; i++) {
-            for (let j = 0; j < terms.length, j++) {
-                // Terms are treated as logical AND
-                if (j == 0 || previousResults[i].score > 0) {
-                    let term = terms[j].toLocaleLowerCase();
-                    let score = _rateMatch(previousResults[i], term);
-
-                    if (score > 0) {
-                        previousResults[i].score += score;
-                    } else {
-                        previousResults[i].score = 0;
-                    }
-                }
-            }
+            previousResults[i].rate(terms);
 
             if (previousResults[i].score > 0) {
                 searchResults.push(previousResults[i]);

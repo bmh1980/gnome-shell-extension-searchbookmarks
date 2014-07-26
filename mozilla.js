@@ -27,7 +27,13 @@ try {
 }
 
 // Internal imports
+const ExtensionUtils = imports.misc.extensionUtils;
 const Shell = imports.gi.Shell;
+
+const _thisExtension = ExtensionUtils.getCurrentExtension();
+
+// Extension imports
+const Bookmark = _thisExtension.imports.bookmark;
 
 const appSystem = Shell.AppSystem.get_default();
 
@@ -127,12 +133,7 @@ function getMozillaBookmarks(appName) {
             continue;
         }
 
-        bookmarks.push({
-            appInfo: appInfo,
-            name: title,
-            score: 0,
-            uri: uri
-        });
+        bookmarks.push(new Bookmark.Bookmark(appInfo, title, uri));
     }
 
     con.close();

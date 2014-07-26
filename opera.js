@@ -22,7 +22,13 @@ const Gio = imports.gi.Gio;
 const GLib = imports.gi.GLib;
 
 // Internal imports
+const ExtensionUtils = imports.misc.extensionUtils;
 const Shell = imports.gi.Shell;
+
+const _thisExtension = ExtensionUtils.getCurrentExtension();
+
+// Extension imports
+const Bookmark = _thisExtension.imports.bookmark;
 
 const appSystem = Shell.AppSystem.get_default();
 
@@ -71,12 +77,8 @@ function getBookmarks() {
                 } else if (line.indexOf("URL=") == 0) {
                     uri = line.split("URL=")[1];
                 } else if (line == "") {
-                    bookmarks.push({
-                        appInfo: appInfo,
-                        name: title,
-                        score: 0,
-                        uri: url
-                    });
+                    let bookmark = new Bookmark.Bookmark(appInfo, title, uri);
+                    bookmarks.push(bookmark);
                     isUri = false;
                     title = null;
                     uri = null;

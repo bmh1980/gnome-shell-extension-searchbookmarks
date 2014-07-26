@@ -22,7 +22,13 @@ const Gio = imports.gi.Gio;
 const GLib = imports.gi.GLib;
 
 // Internal imports
+const ExtensionUtils = imports.misc.extensionUtils;
 const Shell = imports.gi.Shell;
+
+const _thisExtension = ExtensionUtils.getCurrentExtension();
+
+// Extension imports
+const Bookmark = _thisExtension.imports.bookmark;
 
 const appSystem = Shell.AppSystem.get_default();
 const regex = new RegExp('<title>(.+)</title>[\n ]*<link>(.+)</link>', 'g');
@@ -58,12 +64,8 @@ function getBookmarks() {
         let result;
 
         while ((result = regex.exec(contentStr)) !== null) {
-            bookmarks.push({
-                appInfo: appInfo,
-                name: result[1],
-                score: 0,
-                uri: result[2]
-            });
+            let bookmark = new Bookmark.Bookmark(appInfo, result[1], result[2]);
+            bookmarks.push(bookmark);
         }
     }
 

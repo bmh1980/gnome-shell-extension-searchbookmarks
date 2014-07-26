@@ -23,7 +23,13 @@ const Gio = imports.gi.Gio;
 const GLib = imports.gi.GLib;
 
 // Internal imports
+const ExtensionUtils = imports.misc.extensionUtils;
 const Shell = imports.gi.Shell;
+
+const _thisExtension = ExtensionUtils.getCurrentExtension();
+
+// Extension imports
+const Bookmark = _thisExtension.imports.bookmark;
 
 const appSystem = Shell.AppSystem.get_default();
 
@@ -91,12 +97,9 @@ function getChromeBookmarks(appName) {
                 let _bookmarks = extractBookmarks(json.roots[i]);
 
                 for (let j = 0; j < _bookmarks.length; j++) {
-                    bookmarks.push({
-                        appInfo: appInfo,
-                        name: _bookmarks[j][0],
-                        score: 0,
-                        uri: _bookmarks[j][1]
-                    });
+                    let bookmark = new Bookmark.Bookmark(
+                        appInfo, _bookmarks[j][0], _bookmarks[j][1]);
+                    bookmarks.push(bookmark);
                 }
             }
         }
