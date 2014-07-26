@@ -1,5 +1,5 @@
 {
-    "shell-version": ["3.9", "3.10"],
+    "shell-version": ["3.9", "3.10", "3.11", "3.12", "3.13"],
     "uuid": "searchbookmarks@bmh1980de.gmail.com",
     "name": "Search Bookmarks",
     "description": "Search bookmarks of different browsers and show the results in the overview.\n\nThis extension currently supports Chromium, Epiphany, Google Chrome, Midori, Mozilla Firefox and Opera.\n\nTo search in Firefox and Midori bookmarks, you have to install the GIR files for libgda.",
