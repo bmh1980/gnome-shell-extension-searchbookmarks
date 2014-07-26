@@ -24,7 +24,6 @@ const Lang = imports.lang;
 // Internal imports
 const Config = imports.misc.config;
 const ExtensionUtils = imports.misc.extensionUtils;
-const IconGrid = imports.ui.iconGrid;
 const Main = imports.ui.main;
 
 const _gettextDomain = Gettext.domain('searchbookmarks');

@@ -19,7 +19,6 @@
 
 // External imports
 const Clutter = imports.gi.Clutter;
-const Gio = imports.gi.Gio;
 
 // Gjs imports
 const Lang = imports.lang;
