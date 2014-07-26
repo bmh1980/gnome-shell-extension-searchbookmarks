@@ -34,7 +34,7 @@ const _thisExtension = ExtensionUtils.getCurrentExtension();
 // Extension imports
 const Chrome = _thisExtension.imports.chrome;
 const Epiphany = _thisExtension.imports.epiphany;
-const Firefox = _thisExtension.imports.firefox;
+const Mozilla = _thisExtension.imports.mozilla;
 const Midori = _thisExtension.imports.midori;
 const Opera = _thisExtension.imports.opera;
 
