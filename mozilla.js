@@ -31,14 +31,14 @@ const Shell = imports.gi.Shell;
 
 const appSystem = Shell.AppSystem.get_default();
 
-function getBookmarks() {
+function getMozillaBookmarks(appName) {
     let bookmarks = [];
 
     if (typeof Gda == 'undefined') {
         return bookmarks;
     }
 
-    let appInfos = appSystem.initial_search(['firefox']);
+    let appInfos = appSystem.initial_search([appName]);
 
     if (appInfos.length == 0) {
         return bookmarks;
@@ -46,7 +46,7 @@ function getBookmarks() {
 
     let appInfo = appInfos[0].get_app_info();
     let cfgPath = GLib.build_filenamev(
-        [GLib.get_home_dir(), '.mozilla', 'firefox']);
+        [GLib.get_home_dir(), '.mozilla', appName]);
     let iniPath = GLib.build_filenamev([cfgPath, 'profiles.ini']);
 
     let profilePath;
@@ -137,4 +137,8 @@ function getBookmarks() {
 
     con.close();
     return bookmarks;
+}
+
+function getBookmarks() {
+    return getMozillaBookmarks('firefox');
 }
