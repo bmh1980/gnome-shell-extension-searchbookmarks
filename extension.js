@@ -151,13 +151,37 @@ function enable() {
 
     if (_searchBookmarksInstance == null) {
         _searchBookmarksInstance = new SearchBookmarks();
-        Main.overview.addSearchProvider(_searchBookmarksInstance);
+
+        let versionArray = Config.PACKAGE_VERSION.split('.');
+
+        if (versionArray[1] >= 11 && versionArray[2] >= 2) {
+            /**
+             * Hack copied from
+             * https://github.com/hamiller/tracker-search-provider/blob/gnome_12_listview/extension.js
+             * to fix https://bugzilla.gnome.org/show_bug.cgi?id=727461
+             */
+            Main.overview.viewSelector._searchResults._searchSystem.addProvider(_searchBookmarksInstance);
+        } else {
+            Main.overview.addSearchProvider(_searchBookmarksInstance);
+        }
     }
 }
 
 function disable() {
     if (_searchBookmarksInstance != null) {
-        Main.overview.removeSearchProvider(_searchBookmarksInstance);
+        let versionArray = Config.PACKAGE_VERSION.split('.');
+
+        if (versionArray[1] >= 11 && versionArray[2] >= 2) {
+            /**
+             * Hack copied from
+             * https://github.com/hamiller/tracker-search-provider/blob/gnome_12_listview/extension.js
+             * to fix https://bugzilla.gnome.org/show_bug.cgi?id=727461
+            */
+            Main.overview.viewSelector._searchResults._searchSystem._unregisterProvider(_searchBookmarksInstance);
+        } else {
+            Main.overview.removeSearchProvider(_searchBookmarksInstance);
+        }
+
         _searchBookmarksInstance = null;
     }
 }
