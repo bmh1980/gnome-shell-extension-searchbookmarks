@@ -41,6 +41,16 @@ const Opera = _thisExtension.imports.opera;
 // Variable to hold the extension instance
 var _searchBookmarksInstance = null;
 
+// Should we use the new search system in GS >= 3.11.2 or the old one
+const versionArray = Config.PACKAGE_VERSION.split('.');
+var useNewSearch;
+
+if (versionArray[0] == 3 && versionArray[1] >= 11 && versionArray[2] >= 2) {
+    useNewSearch = true;
+} else {
+    useNewSearch = false;
+}
+
 /**
  * _resultSort:
  * @a: Bookmark.Bookmark
@@ -64,6 +74,7 @@ const SearchBookmarks = new Lang.Class({
 
     _init: function() {
         this.id = 'searchbookmarks@bmh1980de.gmail.com';
+        // Required for GS < 3.11.2
         this.searchSystem = null;
         this.modules = [Chrome, Epiphany, Mozilla, Midori, Opera];
     },
@@ -80,7 +91,19 @@ const SearchBookmarks = new Lang.Class({
         return results.slice(0, maxResults);
     },
 
-    getInitialResultSet: function(terms) {
+    /**
+     * GS <= 3.11.1: getInitialResultSet(terms)
+     * GS >= 3.11.2: getInitialResultSet(terms, callback, cancellable)
+    */
+    getInitialResultSet: function() {
+        let terms, callback, cancellable;
+
+        if (useNewSearch) {
+            [terms, callback, cancellable] = arguments;
+        } else {
+            [terms] = arguments;
+        }
+
         let searchResults = [];
 
         for (let i = 0; i < this.modules.length; i++) {
@@ -96,10 +119,28 @@ const SearchBookmarks = new Lang.Class({
         }
 
         searchResults.sort(_resultSort);
-        this.searchSystem.setResults(this, searchResults);
+
+        if (useNewSearch) {
+            callback(searchResults);
+        } else {
+            this.searchSystem.setResults(this, searchResults);
+        }
     },
 
-    getSubsearchResultSet: function(previousResults, terms) {
+    /**
+     * GS <= 3.11.1: getSubsearchResultSet(previousResults, terms)
+     * GS >= 3.11.2: getSubsearchResultSet(previousResults, terms, callback,
+     *                                     cancellable)
+    */
+    getSubsearchResultSet: function() {
+        let previousResults, terms, callback, cancellable;
+
+        if (useNewSearch) {
+            [previousResults, terms, callback, cancellable] = arguments;
+        } else {
+            [previousResults, terms] = arguments;
+        }
+
         let searchResults = [];
 
         for (let i = 0; i < previousResults.length; i++) {
@@ -111,7 +152,12 @@ const SearchBookmarks = new Lang.Class({
         }
 
         searchResults.sort(_resultSort);
-        this.searchSystem.setResults(this, searchResults);
+
+        if (useNewSearch) {
+            callback(searchResults);
+        } else {
+            this.searchSystem.setResults(this, searchResults);
+        }
     },
 
     getResultMetas: function(ids, callback) {
@@ -152,14 +198,12 @@ function enable() {
     if (_searchBookmarksInstance == null) {
         _searchBookmarksInstance = new SearchBookmarks();
 
-        let versionArray = Config.PACKAGE_VERSION.split('.');
-
-        if (versionArray[1] >= 11 && versionArray[2] >= 2) {
-            /**
-             * Hack copied from
-             * https://github.com/hamiller/tracker-search-provider/blob/gnome_12_listview/extension.js
-             * to fix https://bugzilla.gnome.org/show_bug.cgi?id=727461
-             */
+        /**
+         * Hack copied from
+         * https://github.com/hamiller/tracker-search-provider/blob/gnome_12_listview/extension.js
+         * to fix https://bugzilla.gnome.org/show_bug.cgi?id=727461
+        */
+        if (useNewSearch) {
             Main.overview.viewSelector._searchResults._searchSystem.addProvider(_searchBookmarksInstance);
         } else {
             Main.overview.addSearchProvider(_searchBookmarksInstance);
@@ -169,14 +213,12 @@ function enable() {
 
 function disable() {
     if (_searchBookmarksInstance != null) {
-        let versionArray = Config.PACKAGE_VERSION.split('.');
-
-        if (versionArray[1] >= 11 && versionArray[2] >= 2) {
-            /**
-             * Hack copied from
-             * https://github.com/hamiller/tracker-search-provider/blob/gnome_12_listview/extension.js
-             * to fix https://bugzilla.gnome.org/show_bug.cgi?id=727461
-            */
+        /**
+         * Hack copied from
+         * https://github.com/hamiller/tracker-search-provider/blob/gnome_12_listview/extension.js
+         * to fix https://bugzilla.gnome.org/show_bug.cgi?id=727461
+        */
+        if (useNewSearch) {
             Main.overview.viewSelector._searchResults._searchSystem._unregisterProvider(_searchBookmarksInstance);
         } else {
             Main.overview.removeSearchProvider(_searchBookmarksInstance);
